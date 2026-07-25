@@ -50,6 +50,8 @@
   .abbox{margin-top:9px;padding:11px;border:1.5px dashed var(--line);border-radius:12px;background:#fbfaff}
   .abbox .lbl{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5}
   .badge{position:absolute;top:22px;left:22px;background:rgba(255,255,255,.85);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--accent)}
+  #badge.rec{background:var(--pink);color:#fff;font-variant-numeric:tabular-nums;animation:recpulse 1s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.5}}
   hr{border:0;border-top:1px solid var(--line);margin:16px 0}
   .bigbtn{width:100%;border:0;border-radius:13px;padding:13px;font-weight:800;font-size:15px;cursor:pointer;background:var(--accent);color:#fff}
   #controls.locked{opacity:.38;pointer-events:none;filter:grayscale(.3)}
@@ -859,7 +861,7 @@ $('#pngBtn').onclick=()=>{ if(!srcCanvas){alert('Load something first ♡');retu
   const c=make(W,H), x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.filter=fxFilter(); x.drawImage(renderFx(),0,0);
   const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='mosh.png'; a.click(); };
 
-let recorder=null, chunks=[], recMime='video/webm';
+let recorder=null, chunks=[], recMime='video/webm', recTick=null, recEndT=0;
 $('#recBtn').onclick=function(){
   if(!A){alert('Load something first ♡');return;}
   if(recorder){recorder.stop();return;}
@@ -873,11 +875,16 @@ $('#recBtn').onclick=function(){
     recorder=new MediaRecorder(stream,{mimeType:recMime,videoBitsPerSecond:10_000_000});
   }catch(err){ alert("Recording isn't available in this browser — open the tool in Chrome and try again ♡"); recorder=null; return; }
   chunks=[]; recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  const badge=$('#badge');
   recorder.onstop=()=>{const mp4=recMime.includes('mp4'); const blob=new Blob(chunks,{type:mp4?'video/mp4':'video/webm'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mosh.'+(mp4?'mp4':'webm'); a.click();
+    if(recTick){clearInterval(recTick);recTick=null;} badge.classList.remove('rec'); if(A)badge.textContent='LIVE';
     this.classList.remove('rec'); this.textContent='● Record video'; recorder=null;};
-  recorder.start(); this.classList.add('rec'); this.textContent='■ Stop ('+$('#dur').value+'s)';
-  setTimeout(()=>{if(recorder)recorder.stop();}, parseFloat($('#dur').value)*1000);
+  const dur=parseFloat($('#dur').value); recEndT=performance.now()+dur*1000;
+  recorder.start(); this.classList.add('rec'); badge.classList.add('rec'); badge.style.display='block';
+  const btn=this, tick=()=>{ const rem=Math.max(0,Math.ceil((recEndT-performance.now())/1000)); btn.textContent='■ Stop · '+rem+'s left'; badge.textContent='● REC '+rem+'s'; };
+  tick(); recTick=setInterval(tick,200);
+  setTimeout(()=>{if(recorder)recorder.stop();}, dur*1000);
 };
 </script>
 </body>
