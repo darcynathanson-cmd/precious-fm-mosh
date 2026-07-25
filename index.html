@@ -165,8 +165,14 @@
           <summary>glitch fx (pro)</summary>
           <div class="ctl" style="margin-top:8px"><label title="Sort bright pixel runs by brightness">Pixel sort <b id="vSort">0</b></label><input type="range" id="sort" min="0" max="100" step="2" value="0"></div>
           <div class="ctl"><label title="Sort only pixels brighter than this">↳ sort threshold <b id="vSortThresh">120</b></label><input type="range" id="sortThresh" min="0" max="255" step="5" value="120"></div>
+          <div class="row" style="margin-bottom:12px">
+            <select id="sortDir" title="Which way the sort runs"><option value="h">↳ sort: horizontal</option><option value="v">↳ sort: vertical</option></select>
+            <select id="sortMode" title="What the sort orders by"><option value="bright">by: brightness</option><option value="dark">by: darkness</option><option value="hue">by: hue</option></select>
+          </div>
           <div class="ctl"><label title="Each colour channel shows a different past frame — liquid trailing colour">Channel delay (RGB time) <b id="vChDelay">0</b></label><input type="range" id="chDelay" min="0" max="14" step="1" value="0"></div>
           <div class="ctl"><label title="Glowing feedback echo of previous frames">Trails <b id="vTrails">0</b></label><input type="range" id="trails" min="0" max="90" step="2" value="0"></div>
+          <div class="ctl"><label title="Slit-scan: each row shows a different moment in time — a liquid time ripple">Time-warp (slit-scan) <b id="vTimewarp">0</b></label><input type="range" id="timewarp" min="0" max="100" step="2" value="0"></div>
+          <div class="hint">Time-warp samples different rows from different moments — the image ripples through its own recent past. Great over <b>melt</b> or <b>chaos</b>.</div>
         </details>
         <details>
           <summary>stack ↻ (inside itself)</summary>
@@ -267,7 +273,7 @@ function updateSrc(){ if(!srcCanvas)return;
 let params={preset:'blend',power:1.7,smear:6,block:16,rec:7,speed:1.0,ratio:'4:5',crazy:true,
   where:'whole', shape:'cross', radius:0.32, text:'PRECIOUS', fontFamily:'Arial Black', letterSpacing:0, sections:['melt','streak','chaos','blend'],
   fx:{hue:0,sat:100,contrast:100,invert:0},
-  glitch:{sort:0, sortThresh:120, chDelay:0, trails:0},
+  glitch:{sort:0, sortThresh:120, chDelay:0, trails:0, sortDir:'h', sortMode:'bright', timewarp:0},
   cvi:{pixel:0, poster:0, colorize:0, palette:'neon', cycle:0, mirror:'off'},
   stack:{depth:0, scale:0.5, zoom:0},
   vig:{amount:0, split:0},
@@ -402,22 +408,51 @@ function make(w,h){const c=document.createElement('canvas');c.width=w;c.height=h
 function fxFilter(){ const f=params.fx; return `hue-rotate(${f.hue}deg) saturate(${f.sat}%) contrast(${f.contrast}%)`+(f.invert?' invert(1)':''); }
 // ---------- pro glitch passes (post-mosh, pre-colour). Run at half-res for speed. ----------
 let workCv=null, workCtx=null, fbCv=null, fbCtx=null, frameHist=[];
-function pixelSort(ctx, w, h, amount, thresh){  // sort bright horizontal spans by luminance
+function sortKey(r,g,b,mode){                    // ordering key per pixel
+  if(mode==='hue'){ const mx=Math.max(r,g,b), mn=Math.min(r,g,b), dl=mx-mn;
+    if(dl===0) return 0;
+    let hh; if(mx===r) hh=((g-b)/dl+6)%6; else if(mx===g) hh=(b-r)/dl+2; else hh=(r-g)/dl+4;
+    return hh; }
+  return r+g+b;                                  // brightness / darkness both order by luminance
+}
+function pixelSort(ctx, w, h, amount, thresh, dir, mode){  // sort spans of pixels; dir 'h'|'v'; mode bright|dark|hue
   const img=ctx.getImageData(0,0,w,h), d=img.data;
-  const rows=Math.max(1, Math.round(h*amount/100)), stepY=Math.max(1, Math.round(h/rows));
-  for(let y=0;y<h;y+=stepY){ let x=0;
-    while(x<w){ let i=(y*w+x)*4;
-      if((d[i]+d[i+1]+d[i+2])>thresh*3){ let x2=x;
-        while(x2<w){ const j=(y*w+x2)*4; if((d[j]+d[j+1]+d[j+2])<=thresh*3)break; x2++; }
-        const n=x2-x, seg=new Array(n);
-        for(let k=0;k<n;k++){ const j=(y*w+x+k)*4; seg[k]=[d[j],d[j+1],d[j+2],d[j]+d[j+1]+d[j+2]]; }
-        seg.sort((a,b)=>a[3]-b[3]);
-        for(let k=0;k<n;k++){ const j=(y*w+x+k)*4; d[j]=seg[k][0]; d[j+1]=seg[k][1]; d[j+2]=seg[k][2]; }
-        x=x2;
-      } else x++;
+  const vert = dir==='v';
+  const lines = vert ? w : h;                     // scan lines to walk across
+  const len   = vert ? h : w;                     // pixels along each line
+  const nLines=Math.max(1, Math.round(lines*amount/100)), step=Math.max(1, Math.round(lines/nLines));
+  const T3=thresh*3, dark = mode==='dark';
+  const at = (li,p)=> (vert ? (p*w+li) : (li*w+p))*4;   // pixel index for line li, position p
+  for(let li=0; li<lines; li+=step){ let p=0;
+    while(p<len){ const i=at(li,p), lum=d[i]+d[i+1]+d[i+2];
+      const inMask = dark ? (lum < T3) : (lum > T3);
+      if(inMask){ let p2=p;
+        while(p2<len){ const j=at(li,p2), l2=d[j]+d[j+1]+d[j+2]; if(dark ? (l2>=T3) : (l2<=T3)) break; p2++; }
+        const n=p2-p;
+        if(n>1){ const seg=new Array(n);
+          for(let k=0;k<n;k++){ const j=at(li,p+k); seg[k]=[d[j],d[j+1],d[j+2], sortKey(d[j],d[j+1],d[j+2],mode)]; }
+          seg.sort((a,b)=>a[3]-b[3]);
+          for(let k=0;k<n;k++){ const j=at(li,p+k); d[j]=seg[k][0]; d[j+1]=seg[k][1]; d[j+2]=seg[k][2]; }
+        }
+        p=p2;
+      } else p++;
     }
   }
   ctx.putImageData(img,0,0);
+}
+let twHist=[]; const TW_MAX=24;
+function timeWarp(ctx, w, h, amount){            // slit-scan: each row samples a different moment from the frame buffer
+  const cur=ctx.getImageData(0,0,w,h), snap=cur.data.slice();
+  twHist.push(snap); if(twHist.length>TW_MAX) twHist.shift();
+  if(amount<=0 || twHist.length<3) return;       // let a little history build first
+  const D=Math.round(amount/100*(twHist.length-1)); if(D<=0) return;
+  const o=cur.data, phase=t*0.15;
+  for(let y=0;y<h;y++){
+    let f=y/h + 0.14*Math.sin(y/h*9.42 + phase); f = f<0?0 : f>1?1 : f;   // time gradient top→bottom with a live ripple
+    const src=twHist[Math.max(0, twHist.length-1-Math.round(D*f))];
+    const rs=y*w*4; for(let x=0;x<w*4;x++) o[rs+x]=src[rs+x];
+  }
+  ctx.putImageData(cur,0,0);
 }
 function channelDelay(ctx, w, h, d){            // R = now, G = d frames ago, B = 2d ago
   const cur=ctx.getImageData(0,0,w,h);
@@ -478,14 +513,15 @@ function vignetteChannel(ctx,w,h,amount,split){  // soft OVAL vignette + RGB cha
 }
 function renderFx(){                             // returns a canvas to display (A, or a half-res processed copy)
   const g=params.glitch, vg=params.vig;
-  const active = g.sort||g.chDelay||g.trails || vg.amount>0 || vg.split>0;
+  const active = g.sort||g.chDelay||g.trails||g.timewarp || vg.amount>0 || vg.split>0;
   if(!active) return A;
   const fw=Math.max(2,Math.round(W*0.5)), fh=Math.max(2,Math.round(H*0.5));
-  if(!workCv||workCv.width!==fw||workCv.height!==fh){ workCv=make(fw,fh); workCtx=workCv.getContext('2d'); frameHist=[]; fbCv=null; }
+  if(!workCv||workCv.width!==fw||workCv.height!==fh){ workCv=make(fw,fh); workCtx=workCv.getContext('2d'); frameHist=[]; fbCv=null; twHist=[]; }
   workCtx.imageSmoothingEnabled=false; workCtx.clearRect(0,0,fw,fh); workCtx.drawImage(A,0,0,fw,fh);
   if(g.chDelay>0) channelDelay(workCtx, fw, fh, Math.round(g.chDelay));
-  if(g.sort>0)    pixelSort(workCtx, fw, fh, g.sort, g.sortThresh);
+  if(g.sort>0)    pixelSort(workCtx, fw, fh, g.sort, g.sortThresh, g.sortDir||'h', g.sortMode||'bright');
   if(g.trails>0)  trails(workCtx, fw, fh, g.trails);
+  timeWarp(workCtx, fw, fh, g.timewarp||0);
   if(vg.amount>0||vg.split>0) vignetteChannel(workCtx, fw, fh, vg.amount, vg.split);
   return workCv;
 }
@@ -587,7 +623,7 @@ function captureStop(){ return { power:params.power, block:params.block, rec:par
 function lerp(a,b,f){ return a+(b-a)*f; }
 function applyStopLerp(a,b,f){
   aSet(params,'power',+lerp(a.power,b.power,f).toFixed(2)); aSet(params,'block',Math.round(lerp(a.block,b.block,f))); aSet(params,'rec',Math.round(lerp(a.rec,b.rec,f)));
-  ['sort','sortThresh','chDelay','trails'].forEach(k=>aSet(params.glitch,k,Math.round(lerp(a.g[k],b.g[k],f))));
+  ['sort','sortThresh','chDelay','trails','timewarp'].forEach(k=>aSet(params.glitch,k,Math.round(lerp(a.g[k]||0,b.g[k]||0,f))));
   ['pixel','poster','colorize','cycle'].forEach(k=>aSet(params.cvi,k,Math.round(lerp(a.c[k],b.c[k],f))));
   ['hue','sat','contrast'].forEach(k=>aSet(params.fx,k,Math.round(lerp(a.f[k],b.f[k],f))));
   const near=f<0.5?a:b; params.cvi.palette=near.palette; params.cvi.mirror=near.mirror;
@@ -598,7 +634,7 @@ function applyAuto(mode,p){
   if(mode==='intensity'){ aSet(params,'power',+(0.6+2.7*ease(p)).toFixed(1)); aSet(params,'block',Math.round(8+34*ease((p+0.5)%1))); }
   else if(mode==='colour'){ aSet(params.cvi,'colorize',Math.round(92*tri)); aSet(params.cvi,'cycle',3); aSet(params.fx,'hue',Math.round(360*p)); }
   else if(mode==='sort'){ aSet(params.glitch,'sort',Math.round(92*tri)); aSet(params.glitch,'sortThresh',Math.round(70+130*p)); }
-  else if(mode==='smear'){ aSet(params.glitch,'chDelay',Math.round(11*ease(p))); aSet(params.glitch,'trails',Math.round(72*ease(p))); }
+  else if(mode==='smear'){ aSet(params.glitch,'chDelay',Math.round(11*ease(p))); aSet(params.glitch,'trails',Math.round(72*ease(p))); aSet(params.glitch,'timewarp',Math.round(85*ease(p))); }
   else if(mode==='random'){ const s=Math.floor(p*8);
     aSet(params,'power',+(0.6+2.9*hash(s*1.7)).toFixed(1)); aSet(params,'block',Math.round(8+38*hash(s*3.1+2)));
     aSet(params.cvi,'colorize',Math.round(90*hash(s*2.3+5))); aSet(params.glitch,'sort',Math.round(90*hash(s*4.1+7))); }
@@ -609,7 +645,7 @@ function applyAuto(mode,p){
 }
 $('#autoMoveBtn').onclick=()=>{ params.auto.on=!params.auto.on; $('#autoMoveBtn').textContent='auto-move: '+(params.auto.on?'on':'off'); autoBase=performance.now(); };
 $('#autoMode').onchange=e=>{ params.auto.mode=e.target.value; autoBase=performance.now(); };
-const AUTO_SLIDERS=new Set(['power','block','rec','sort','sortThresh','chDelay','trails','pixel','poster','colorize','cycle','hue','sat','contrast']);
+const AUTO_SLIDERS=new Set(['power','block','rec','sort','sortThresh','chDelay','trails','timewarp','pixel','poster','colorize','cycle','hue','sat','contrast']);
 $('#controls').addEventListener('pointerdown', e=>{ if(params.auto.on && AUTO_SLIDERS.has(e.target.id)){ params.auto.on=false; $('#autoMoveBtn').textContent='auto-move: off'; } });
 $('#autoSpeed').addEventListener('input',e=>{ params.auto.speed=parseFloat(e.target.value); $('#vAutoSpeed').textContent=e.target.value; });
 function updateStopCount(){ const n=stops.length; const el=$('#stopCount'); if(el) el.textContent = n+(n===1?' stop':' stops')+(n<2?' — add 2+':''); }
@@ -793,8 +829,10 @@ function applyFxToUI(){ $('#hue').value=params.fx.hue; $('#sat').value=params.fx
 ['hue','sat','contrast'].forEach(id=>$('#'+id).addEventListener('input',e=>{ params.fx[id]=parseFloat(e.target.value); $('#v'+id.charAt(0).toUpperCase()+id.slice(1)).textContent=e.target.value; }));
 $('#invert').onchange=e=>params.fx.invert=e.target.checked?1:0;
 // glitch fx wiring
-[['sort','sort'],['sortThresh','sortThresh'],['chDelay','chDelay'],['trails','trails']].forEach(([id,key])=>
-  $('#'+id).addEventListener('input',e=>{ params.glitch[key]=parseFloat(e.target.value); $('#v'+id.charAt(0).toUpperCase()+id.slice(1)).textContent=e.target.value; if(key!=='chDelay')frameHist=[]; }));
+[['sort','sort'],['sortThresh','sortThresh'],['chDelay','chDelay'],['trails','trails'],['timewarp','timewarp']].forEach(([id,key])=>
+  $('#'+id).addEventListener('input',e=>{ params.glitch[key]=parseFloat(e.target.value); $('#v'+id.charAt(0).toUpperCase()+id.slice(1)).textContent=e.target.value; if(key!=='chDelay'&&key!=='timewarp')frameHist=[]; }));
+$('#sortDir').onchange=e=>{ params.glitch.sortDir=e.target.value; };
+$('#sortMode').onchange=e=>{ params.glitch.sortMode=e.target.value; };
 // stack ↻ wiring
 $('#depth').addEventListener('input',e=>{ params.stack.depth=parseInt(e.target.value); $('#vDepth').textContent=e.target.value; });
 $('#sscale').addEventListener('input',e=>{ params.stack.scale=parseInt(e.target.value)/100; $('#vSscale').textContent=e.target.value; });
@@ -841,7 +879,9 @@ function resyncUI(){
   $('#shapeSel').value=params.shape;
   setSlider('power','power',params.power); setSlider('block','block',params.block); setSlider('rec','rec',params.rec); setSlider('smear','smear',params.smear); setSlider('speed','speed',params.speed);
   applyFxToUI(); $('#ratio').value=params.ratio;
-  if(params.glitch){ ['sort','sortThresh','chDelay','trails'].forEach(k=>{ const el=$('#'+k); if(el){el.value=params.glitch[k]; $('#v'+k.charAt(0).toUpperCase()+k.slice(1)).textContent=params.glitch[k];} }); }
+  if(params.glitch){ if(params.glitch.sortDir==null)params.glitch.sortDir='h'; if(params.glitch.sortMode==null)params.glitch.sortMode='bright'; if(params.glitch.timewarp==null)params.glitch.timewarp=0;
+    ['sort','sortThresh','chDelay','trails','timewarp'].forEach(k=>{ const el=$('#'+k); if(el){el.value=params.glitch[k]; $('#v'+k.charAt(0).toUpperCase()+k.slice(1)).textContent=params.glitch[k];} });
+    $('#sortDir').value=params.glitch.sortDir; $('#sortMode').value=params.glitch.sortMode; }
   if(params.stack){ $('#depth').value=params.stack.depth; $('#vDepth').textContent=params.stack.depth; const sp=Math.round(params.stack.scale*100); $('#sscale').value=sp; $('#vSscale').textContent=sp; $('#szoom').value=params.stack.zoom; $('#vSzoom').textContent=params.stack.zoom; }
   if(params.vig){ const va=Math.round(params.vig.amount*100), vs=Math.round(params.vig.split*100); $('#vamt').value=va; $('#vVamt').textContent=va; $('#vsplit').value=vs; $('#vVsplit').textContent=vs; }
   $('#bpm').value=react.bpm; $('#vBpm').textContent=react.bpm; $('#react').value=react.strength; $('#vReact').textContent=react.strength;
