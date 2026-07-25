@@ -225,7 +225,8 @@
           <div class="row" style="margin-top:8px"><button class="mini" id="audioBtn">🎵 add music</button><button class="mini" id="beatOnBtn">react: off</button></div>
           <div class="ctl" style="margin-top:8px"><label>BPM <b id="vBpm">128</b></label><input type="range" id="bpm" min="60" max="180" step="1" value="128"></div>
           <div class="ctl"><label>Reactivity <b id="vReact">1.2</b></label><input type="range" id="react" min="0" max="3" step="0.1" value="1.2"></div>
-          <div class="hint">Add a track (or use the video's own sound) + turn react on → the glitch pulses to the bass. Music is baked into the recording. No track? It pulses to the BPM.</div>
+          <div class="ctl"><label>🔊 Volume <b id="vVol">50%</b></label><input type="range" id="vol" min="0" max="1" step="0.01" value="0.5"></div>
+          <div class="hint">Add a track (or use the video's own sound) + turn react on → the glitch pulses to the bass. Music is baked into the recording. No track? It pulses to the BPM.<br><b>Volume</b> only changes what you hear while working — the recording keeps the music at full level, and the beat still reacts even at 0.</div>
         </details>
       </div>
     </div>
@@ -295,7 +296,8 @@ const MASK={text:1};
 const SIZED=s=> s==='circle'||MASK[s];
 let maskCv=null, maskCtx=null, maskFlags=null, maskDirty=true;
 // beat sync
-let beatMul=1, audioEl=null, audioCtx=null, analyser=null, freqData=null, audioDest=null;
+let beatMul=1, audioEl=null, audioCtx=null, analyser=null, freqData=null, audioDest=null, monitorGain=null, monitorVol=0.5;
+function monitorOut(){ if(!monitorGain){ monitorGain=audioCtx.createGain(); monitorGain.gain.value=monitorVol; monitorGain.connect(audioCtx.destination); } return monitorGain; }
 const react={on:false, strength:1.2, bpm:128, hasAudio:false};
 function computeBeat(){
   if(!react.on) return 1;
@@ -363,7 +365,7 @@ function hookVideoAudio(v){                     // let a video's own sound drive
     const src=audioCtx.createMediaElementSource(v);
     analyser=audioCtx.createAnalyser(); analyser.fftSize=128; freqData=new Uint8Array(analyser.frequencyBinCount);
     audioDest=audioCtx.createMediaStreamDestination();
-    src.connect(analyser); analyser.connect(audioCtx.destination); analyser.connect(audioDest);
+    src.connect(analyser); analyser.connect(monitorOut()); analyser.connect(audioDest);
     v.muted=false; if(audioCtx.resume)audioCtx.resume(); react.hasAudio=true;
     $('#audioBtn').textContent='🎵 using video sound';
   }catch(_){ /* video has no audio track — fine */ }
@@ -808,7 +810,7 @@ function initAudio(url){
     const srcN=audioCtx.createMediaElementSource(audioEl);
     analyser=audioCtx.createAnalyser(); analyser.fftSize=128; freqData=new Uint8Array(analyser.frequencyBinCount);
     audioDest=audioCtx.createMediaStreamDestination();
-    srcN.connect(analyser); analyser.connect(audioCtx.destination); analyser.connect(audioDest);
+    srcN.connect(analyser); analyser.connect(monitorOut()); analyser.connect(audioDest);
     if(audioCtx.resume) audioCtx.resume();
     audioEl.play().catch(()=>{});
     react.hasAudio=true; react.on=true;
@@ -818,6 +820,7 @@ function initAudio(url){
 $('#beatOnBtn').onclick=()=>{ react.on=!react.on; $('#beatOnBtn').textContent='react: '+(react.on?'on':'off'); if(react.on&&audioCtx&&audioCtx.resume)audioCtx.resume(); };
 $('#bpm').addEventListener('input',e=>{ react.bpm=parseFloat(e.target.value); $('#vBpm').textContent=e.target.value; });
 $('#react').addEventListener('input',e=>{ react.strength=parseFloat(e.target.value); $('#vReact').textContent=e.target.value; });
+$('#vol').addEventListener('input',e=>{ monitorVol=parseFloat(e.target.value); if(monitorGain) monitorGain.gain.value=monitorVol; $('#vVol').textContent=Math.round(monitorVol*100)+'%'; });
 
 // ---------- save / load a look ----------
 function collectLook(){ return {app:'mosh',v:1, params:JSON.parse(JSON.stringify(params)), splitX, splitY, react:{bpm:react.bpm,strength:react.strength}, stops:JSON.parse(JSON.stringify(stops))}; }
