@@ -108,7 +108,6 @@
         <div class="seg" id="whereSeg">
           <button data-w="whole" class="on">whole</button>
           <button data-w="split">sections</button>
-          <button data-w="text">✏️ text</button>
         </div>
 
         <div id="wholeBox" class="sub">
@@ -128,25 +127,6 @@
             <option value="circle">shape: circle ◉</option>
             <option value="wedges">shape: wedges ✳</option>
           </select>
-        </div>
-
-        <div id="textBox" class="sub" style="display:none">
-          <textarea id="textInput" rows="2" placeholder="type words… (Enter = new line)">PRECIOUS</textarea>
-          <select id="fontSel" style="margin-top:8px">
-            <option value="Arial Black">Arial Black (bold sans)</option>
-            <option value="Bebas Neue">Bebas Neue (tall condensed)</option>
-            <option value="Impact">Impact (poster)</option>
-            <option value="Bungee">Bungee (chunky)</option>
-            <option value="Bungee Shade">Bungee Shade (3D)</option>
-            <option value="Rubik Mono One">Rubik Mono One (heavy)</option>
-            <option value="Monoton">Monoton (retro lines)</option>
-            <option value="Press Start 2P">Press Start 2P (pixel)</option>
-            <option value="Pacifico">Pacifico (script)</option>
-            <option value="Comic Sans MS">Comic Sans (cutie)</option>
-            <option value="Georgia">Georgia (serif)</option>
-            <option value="Courier New">Courier (mono)</option>
-          </select>
-          <div class="ctl" id="lsCtl" style="margin-top:10px"><label>Letter spacing <b id="vLs">0</b></label><input type="range" id="ls" min="-12" max="48" step="1" value="0"></div>
         </div>
 
         <div id="sectionPickers" class="sub" style="display:none"></div>
@@ -189,16 +169,17 @@
           <div class="ctl"><label title="Glowing feedback echo of previous frames">Trails <b id="vTrails">0</b></label><input type="range" id="trails" min="0" max="90" step="2" value="0"></div>
         </details>
         <details>
-          <summary>Fairlight CVI '86</summary>
-          <div class="row" style="margin-top:8px"><button class="mini" id="cviPreset" title="Instant 80s video-synth look">✨ Fairlight '86</button><button class="mini" id="cviReset">reset</button></div>
-          <div class="ctl" style="margin-top:8px"><label title="Chunky lo-fi pixels like the CVI's 235x287">Pixelate <b id="vPixel">0</b></label><input type="range" id="pixel" min="0" max="100" step="2" value="0"></div>
-          <div class="ctl"><label title="Flat banded colours">Posterize <b id="vPoster">0</b></label><input type="range" id="poster" min="0" max="8" step="1" value="0"></div>
-          <div class="ctl"><label title="Map brightness to a neon palette (the signature CVI look)">Colorize <b id="vColorize">0</b></label><input type="range" id="colorize" min="0" max="100" step="5" value="0"></div>
-          <div class="row" style="margin-top:2px">
-            <select id="palette"><option value="neon">neon</option><option value="thermal">thermal</option><option value="acid">acid</option><option value="ice">ice</option><option value="sunset">sunset</option></select>
-            <select id="mirror"><option value="off">no mirror</option><option value="H">mirror ↔</option><option value="V">mirror ↕</option><option value="quad">mirror ✚</option></select>
-          </div>
-          <div class="ctl" style="margin-top:8px"><label title="Animate the palette (colour cycling)">Colour cycle <b id="vCycle">0</b></label><input type="range" id="cycle" min="0" max="8" step="1" value="0"></div>
+          <summary>stack ↻ (inside itself)</summary>
+          <div class="ctl" style="margin-top:8px"><label title="How many nested copies to recurse into the centre">Depth <b id="vDepth">0</b></label><input type="range" id="depth" min="0" max="6" step="1" value="0"></div>
+          <div class="ctl"><label title="How much smaller each nested copy is">Shrink <b id="vSscale">50</b></label><input type="range" id="sscale" min="30" max="72" step="1" value="50"></div>
+          <div class="ctl"><label title="0 = still · higher = the classic never-ending zoom into itself">Infinite zoom <b id="vSzoom">0</b></label><input type="range" id="szoom" min="0" max="10" step="1" value="0"></div>
+          <div class="hint">Nests the image inside itself toward the centre — like a photo of a photo of a photo. Turn <b>infinite zoom</b> up and record for the endless-zoom loop.</div>
+        </details>
+        <details>
+          <summary>vignette + channels</summary>
+          <div class="ctl" style="margin-top:8px"><label title="Darken toward the edges (oval frame)">Vignette <b id="vVamt">0</b></label><input type="range" id="vamt" min="0" max="100" step="5" value="0"></div>
+          <div class="ctl"><label title="Split into red / green / blue toward the edges — centre stays clean">Channel split <b id="vVsplit">0</b></label><input type="range" id="vsplit" min="0" max="100" step="5" value="0"></div>
+          <div class="hint">An auto oval vignette. Turn up <b>channel split</b> and the edges peel into red / green / blue while the centre stays true — each ring reads as a different channel. Stacks beautifully with <b>stack ↻</b> (every nested copy gets its own vignette).</div>
         </details>
         <details>
           <summary>auto-move ✨ (record a journey)</summary>
@@ -227,8 +208,8 @@
           <div class="row" style="margin-top:8px"><button class="mini" id="audioBtn">🎵 add music</button><button class="mini" id="beatOnBtn">react: off</button></div>
           <div class="ctl" style="margin-top:8px"><label>BPM <b id="vBpm">128</b></label><input type="range" id="bpm" min="60" max="180" step="1" value="128"></div>
           <div class="ctl"><label>Reactivity <b id="vReact">1.2</b></label><input type="range" id="react" min="0" max="3" step="0.1" value="1.2"></div>
-          <div class="ctl"><label>🔊 Volume <b id="vVol">50%</b></label><input type="range" id="vol" min="0" max="1" step="0.01" value="0.5"></div>
-          <div class="hint">Add a track (or use the video's own sound) + turn react on → the glitch pulses to the bass. Music is baked into the recording. No track? It pulses to the BPM.<br><b>Volume</b> only changes what you hear while working — the recording keeps the music at full level, and the beat still reacts even at 0.</div>
+          <div class="ctl"><label>🔊 Volume <b id="vVol">off</b></label><input type="range" id="vol" min="0" max="1" step="0.01" value="0"></div>
+          <div class="hint">Add a track (or use the video's own sound) + turn react on → the glitch pulses to the bass. Music is baked into the recording. No track? It pulses to the BPM.<br><b>Volume</b> starts <b>off</b> so nothing blares — slide it up if you want to hear the track while working. Either way the recording keeps the music at full level and the beat still reacts.</div>
         </details>
       </div>
     </div>
@@ -288,17 +269,19 @@ let params={preset:'blend',power:1.7,smear:6,block:16,rec:7,speed:1.0,ratio:'4:5
   fx:{hue:0,sat:100,contrast:100,invert:0},
   glitch:{sort:0, sortThresh:120, chDelay:0, trails:0},
   cvi:{pixel:0, poster:0, colorize:0, palette:'neon', cycle:0, mirror:'off'},
+  stack:{depth:0, scale:0.5, zoom:0},
+  vig:{amount:0, split:0},
   auto:{on:false, mode:'journey', speed:1}};
 let splitX=0.5, splitY=0.5, dragMode=null;
 const OPTS=['blend','melt','streak','chaos','random'];              // whole-image looks
 const SOPTS=['clean','blend','melt','streak','chaos','random'];     // section options (adds 'clean' = untouched photo)
 const TINT={blend:'#7c5cff',melt:'#ff5db1',streak:'#22b0ff',chaos:'#ffb020',random:'#33cc88',clean:'#5bd6a8'};
 // mask shapes (inside = section 0, outside = section 1). 'text' = a typed word.
-const MASK={text:1};
+const MASK={};   // (typed-word masks removed)
 const SIZED=s=> s==='circle'||MASK[s];
 let maskCv=null, maskCtx=null, maskFlags=null, maskDirty=true;
 // beat sync
-let beatMul=1, audioEl=null, audioCtx=null, analyser=null, freqData=null, audioDest=null, monitorGain=null, monitorVol=0.5;
+let beatMul=1, audioEl=null, audioCtx=null, analyser=null, freqData=null, audioDest=null, monitorGain=null, monitorVol=0;
 function monitorOut(){ if(!monitorGain){ monitorGain=audioCtx.createGain(); monitorGain.gain.value=monitorVol; monitorGain.connect(audioCtx.destination); } return monitorGain; }
 const react={on:false, strength:1.2, bpm:128, hasAudio:false};
 function computeBeat(){
@@ -476,9 +459,23 @@ function mirror(ctx,w,h,mode){ const tc=make(w,h),tx=tc.getContext('2d'); tx.dra
   if(mode==='H'||mode==='quad'){ ctx.save(); ctx.translate(w,0); ctx.scale(-1,1); ctx.drawImage(tc,0,0,w/2,h,0,0,w/2,h); ctx.restore(); }
   if(mode==='V'||mode==='quad'){ const t2=make(w,h),t2x=t2.getContext('2d'); t2x.drawImage(ctx.canvas,0,0);
     ctx.save(); ctx.translate(0,h); ctx.scale(1,-1); ctx.drawImage(t2,0,0,w,h/2,0,0,w,h/2); ctx.restore(); } }
+function vignetteChannel(ctx,w,h,amount,split){  // oval vignette + RGB channel separation growing toward the edges
+  const img=ctx.getImageData(0,0,w,h), d=img.data, src=new Uint8ClampedArray(d);
+  const cx=w/2, cy=h/2, maxr=Math.hypot(cx,cy)||1, sh=split*0.07*w;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=(y*w+x)*4;
+    const dxn=(x-cx)/maxr, dyn=(y-cy)/maxr, r=Math.min(1,Math.hypot(dxn,dyn));
+    if(sh>0){ const off=Math.round(sh*r*r);
+      const rx=Math.min(w-1,Math.max(0,x+Math.round(dxn*off))), ry=Math.min(h-1,Math.max(0,y+Math.round(dyn*off)));
+      const bx=Math.min(w-1,Math.max(0,x-Math.round(dxn*off))), by=Math.min(h-1,Math.max(0,y-Math.round(dyn*off)));
+      d[i]=src[(ry*w+rx)*4]; d[i+2]=src[(by*w+bx)*4+2]; }   // R pulled outward, B pulled inward, G stays
+    if(amount>0){ const v=1-amount*Math.pow(Math.max(0,r-0.34)/0.66,1.7); d[i]*=v; d[i+1]*=v; d[i+2]*=v; }
+  }
+  ctx.putImageData(img,0,0);
+}
 function renderFx(){                             // returns a canvas to display (A, or a half-res processed copy)
-  const g=params.glitch, c=params.cvi;
-  const active = g.sort||g.chDelay||g.trails || c.pixel||c.poster||c.colorize||(c.mirror&&c.mirror!=='off');
+  const g=params.glitch, vg=params.vig;
+  const active = g.sort||g.chDelay||g.trails || vg.amount>0 || vg.split>0;
   if(!active) return A;
   const fw=Math.max(2,Math.round(W*0.5)), fh=Math.max(2,Math.round(H*0.5));
   if(!workCv||workCv.width!==fw||workCv.height!==fh){ workCv=make(fw,fh); workCtx=workCv.getContext('2d'); frameHist=[]; fbCv=null; }
@@ -486,11 +483,22 @@ function renderFx(){                             // returns a canvas to display 
   if(g.chDelay>0) channelDelay(workCtx, fw, fh, Math.round(g.chDelay));
   if(g.sort>0)    pixelSort(workCtx, fw, fh, g.sort, g.sortThresh);
   if(g.trails>0)  trails(workCtx, fw, fh, g.trails);
-  if(c.pixel>0)   pixelate(workCtx, fw, fh, c.pixel);
-  if(c.poster>0)  posterize(workCtx, fw, fh, c.poster);
-  if(c.colorize>0){ cviPhase=(cviPhase + (c.cycle||0)) % 256; colorize(workCtx, fw, fh, c.colorize, c.palette, Math.round(cviPhase)); }
-  if(c.mirror&&c.mirror!=='off') mirror(workCtx, fw, fh, c.mirror);
+  if(vg.amount>0||vg.split>0) vignetteChannel(workCtx, fw, fh, vg.amount, vg.split);
   return workCv;
+}
+let stackCv=null, stackCtx=null;
+function applyStack(ctx){                         // recursive "stack inside itself" (Droste), optional infinite zoom
+  const s=params.stack; if(!s||s.depth<=0) return;
+  if(!stackCv||stackCv.width!==W||stackCv.height!==H){ stackCv=make(W,H); stackCtx=stackCv.getContext('2d'); }
+  stackCtx.imageSmoothingEnabled=false; stackCtx.clearRect(0,0,W,H); stackCtx.drawImage(ctx.canvas,0,0);  // snapshot styled frame
+  const cx=W/2, cy=H/2, sc=s.scale;
+  ctx.imageSmoothingEnabled=false;
+  if(s.zoom>0){ const zt=(t*s.zoom*0.012)%1;
+    ctx.clearRect(0,0,W,H);
+    for(let k=s.depth+1;k>=-1;k--){ const e=k+zt; const f=Math.pow(sc,e); const w=W*f,h=H*f; ctx.drawImage(stackCv,0,0,W,H,cx-w/2,cy-h/2,w,h); }
+  } else {
+    for(let k=s.depth;k>=1;k--){ const f=Math.pow(sc,k); const w=W*f,h=H*f; ctx.drawImage(stackCv,0,0,W,H,cx-w/2,cy-h/2,w,h); }
+  }
 }
 function fitPreview(){                        // set CSS display size so a small photo still fills the stage
   if(!W)return;
@@ -579,7 +587,7 @@ function applyStopLerp(a,b,f){
   ['sort','sortThresh','chDelay','trails'].forEach(k=>aSet(params.glitch,k,Math.round(lerp(a.g[k],b.g[k],f))));
   ['pixel','poster','colorize','cycle'].forEach(k=>aSet(params.cvi,k,Math.round(lerp(a.c[k],b.c[k],f))));
   ['hue','sat','contrast'].forEach(k=>aSet(params.fx,k,Math.round(lerp(a.f[k],b.f[k],f))));
-  const near=f<0.5?a:b; params.cvi.palette=near.palette; params.cvi.mirror=near.mirror; $('#palette').value=near.palette; $('#mirror').value=near.mirror;
+  const near=f<0.5?a:b; params.cvi.palette=near.palette; params.cvi.mirror=near.mirror;
 }
 function applyAuto(mode,p){
   if(mode==='custom'){ if(stops.length<2)return; const seg=p*(stops.length-1), i=Math.min(stops.length-2,Math.floor(seg)); applyStopLerp(stops[i],stops[i+1],seg-i); return; }
@@ -623,6 +631,7 @@ function loop(){
   for(let i=0;i<iters;i++) step();
   pctx.imageSmoothingEnabled=false;
   pctx.filter=fxFilter(); pctx.drawImage(renderFx(),0,0,W,H); pctx.filter='none';   // glitch fx + colour fx (also in recording)
+  applyStack(pctx);                              // recursive stack / infinite zoom (also in recording)
   if(params.where==='split' && !recorder) drawSplitGuides();
   raf=requestAnimationFrame(loop);
 }
@@ -743,25 +752,16 @@ function buildSectionPickers(){
 }
 function setStyleMode(w){
   params.where = (w==='whole')?'whole':'split';
-  const isText = (w==='text');
-  if(isText){ params.shape='text'; if(!params.sections.includes('clean')) params.sections=['clean','streak']; params.radius=Math.max(params.radius,0.30); }
-  else if(w==='split' && params.shape==='text'){ params.shape='cross'; params.sections=['melt','streak','chaos','blend']; }
+  if(params.shape==='text') params.shape='cross';
   [...$('#whereSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.w===w));
   $('#wholeBox').style.display = (w==='whole')?'block':'none';
   $('#shapeRow').style.display = (w==='split')?'block':'none';
-  $('#textBox').style.display  = isText?'block':'none';
   $('#splitTools').style.display = (w!=='whole')?'block':'none';
-  $('#shapeSel').value = (params.shape==='text')?'cross':params.shape;
+  $('#shapeSel').value = params.shape;
   preview.style.cursor = (w!=='whole')?'pointer':'default';
-  buildSectionPickers(); maskDirty=true; rebuildMask();
+  buildSectionPickers();
 }
-$('#shapeSel').onchange=e=>{ params.shape=e.target.value; buildSectionPickers(); maskDirty=true; rebuildMask(); };
-$('#textInput').addEventListener('input',e=>{ params.text=e.target.value||' '; maskDirty=true; rebuildMask(); });
-$('#ls').addEventListener('input',e=>{ params.letterSpacing=parseFloat(e.target.value); $('#vLs').textContent=e.target.value; maskDirty=true; rebuildMask(); });
-$('#fontSel').addEventListener('change',e=>{
-  params.fontFamily=e.target.value; maskDirty=true; rebuildMask();
-  if(document.fonts&&document.fonts.load){ document.fonts.load(`64px "${params.fontFamily}"`).then(()=>{maskDirty=true; rebuildMask();}).catch(()=>{}); }
-});
+$('#shapeSel').onchange=e=>{ params.shape=e.target.value; buildSectionPickers(); };
 
 // ---------- sliders ----------
 function bind(id,key){const el=$('#'+id), out=$('#v'+id.charAt(0).toUpperCase()+id.slice(1));
@@ -792,13 +792,13 @@ $('#invert').onchange=e=>params.fx.invert=e.target.checked?1:0;
 // glitch fx wiring
 [['sort','sort'],['sortThresh','sortThresh'],['chDelay','chDelay'],['trails','trails']].forEach(([id,key])=>
   $('#'+id).addEventListener('input',e=>{ params.glitch[key]=parseFloat(e.target.value); $('#v'+id.charAt(0).toUpperCase()+id.slice(1)).textContent=e.target.value; if(key!=='chDelay')frameHist=[]; }));
-// Fairlight CVI wiring
-['pixel','poster','colorize','cycle'].forEach(id=>$('#'+id).addEventListener('input',e=>{ params.cvi[id]=parseFloat(e.target.value); $('#v'+id.charAt(0).toUpperCase()+id.slice(1)).textContent=e.target.value; }));
-$('#palette').onchange=e=>params.cvi.palette=e.target.value;
-$('#mirror').onchange=e=>params.cvi.mirror=e.target.value;
-function applyCviToUI(){ const c=params.cvi; ['pixel','poster','colorize','cycle'].forEach(id=>{$('#'+id).value=c[id]; $('#v'+id.charAt(0).toUpperCase()+id.slice(1)).textContent=c[id];}); $('#palette').value=c.palette; $('#mirror').value=c.mirror; }
-$('#cviPreset').onclick=()=>{ params.cvi={pixel:38, poster:5, colorize:70, palette:'neon', cycle:2, mirror:'off'}; applyCviToUI(); };
-$('#cviReset').onclick=()=>{ params.cvi={pixel:0, poster:0, colorize:0, palette:params.cvi.palette, cycle:0, mirror:'off'}; applyCviToUI(); };
+// stack ↻ wiring
+$('#depth').addEventListener('input',e=>{ params.stack.depth=parseInt(e.target.value); $('#vDepth').textContent=e.target.value; });
+$('#sscale').addEventListener('input',e=>{ params.stack.scale=parseInt(e.target.value)/100; $('#vSscale').textContent=e.target.value; });
+$('#szoom').addEventListener('input',e=>{ params.stack.zoom=parseFloat(e.target.value); $('#vSzoom').textContent=e.target.value; });
+// vignette + channels wiring
+$('#vamt').addEventListener('input',e=>{ params.vig.amount=parseInt(e.target.value)/100; $('#vVamt').textContent=e.target.value; });
+$('#vsplit').addEventListener('input',e=>{ params.vig.split=parseInt(e.target.value)/100; $('#vVsplit').textContent=e.target.value; });
 const FXP={candy:{hue:300,sat:170,contrast:110,invert:0}, acid:{hue:80,sat:260,contrast:135,invert:0}, cool:{hue:200,sat:150,contrast:105,invert:0}, fxreset:{hue:0,sat:100,contrast:100,invert:0}};
 document.querySelectorAll('[data-fx]').forEach(btn=>btn.onclick=()=>{ params.fx={...FXP[btn.dataset.fx]}; applyFxToUI(); });
 
@@ -823,24 +823,24 @@ function initAudio(url){
 $('#beatOnBtn').onclick=()=>{ react.on=!react.on; $('#beatOnBtn').textContent='react: '+(react.on?'on':'off'); if(react.on&&audioCtx&&audioCtx.resume)audioCtx.resume(); };
 $('#bpm').addEventListener('input',e=>{ react.bpm=parseFloat(e.target.value); $('#vBpm').textContent=e.target.value; });
 $('#react').addEventListener('input',e=>{ react.strength=parseFloat(e.target.value); $('#vReact').textContent=e.target.value; });
-$('#vol').addEventListener('input',e=>{ monitorVol=parseFloat(e.target.value); if(monitorGain) monitorGain.gain.value=monitorVol; $('#vVol').textContent=Math.round(monitorVol*100)+'%'; });
+$('#vol').addEventListener('input',e=>{ monitorVol=parseFloat(e.target.value); if(monitorGain) monitorGain.gain.value=monitorVol; $('#vVol').textContent=monitorVol<=0?'off':Math.round(monitorVol*100)+'%'; });
 
 // ---------- save / load a look ----------
 function collectLook(){ return {app:'mosh',v:1, params:JSON.parse(JSON.stringify(params)), splitX, splitY, react:{bpm:react.bpm,strength:react.strength}, stops:JSON.parse(JSON.stringify(stops))}; }
 function resyncUI(){
+  if(params.shape==='text') params.shape='cross';   // typed-word masks removed
   [...$('#chips').children].forEach(x=>x.classList.toggle('on',x.dataset.p===params.preset));
-  const w = params.where==='whole' ? 'whole' : (params.shape==='text'?'text':'split');
+  const w = params.where==='whole' ? 'whole' : 'split';
   [...$('#whereSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.w===w));
   $('#wholeBox').style.display=(w==='whole')?'block':'none';
   $('#shapeRow').style.display=(w==='split')?'block':'none';
-  $('#textBox').style.display=(w==='text')?'block':'none';
   $('#splitTools').style.display=(w!=='whole')?'block':'none';
-  $('#shapeSel').value=(params.shape==='text')?'cross':params.shape;
-  $('#textInput').value=params.text; $('#fontSel').value=params.fontFamily; $('#ls').value=params.letterSpacing||0; $('#vLs').textContent=params.letterSpacing||0;
+  $('#shapeSel').value=params.shape;
   setSlider('power','power',params.power); setSlider('block','block',params.block); setSlider('rec','rec',params.rec); setSlider('smear','smear',params.smear); setSlider('speed','speed',params.speed);
   applyFxToUI(); $('#ratio').value=params.ratio;
   if(params.glitch){ ['sort','sortThresh','chDelay','trails'].forEach(k=>{ const el=$('#'+k); if(el){el.value=params.glitch[k]; $('#v'+k.charAt(0).toUpperCase()+k.slice(1)).textContent=params.glitch[k];} }); }
-  if(params.cvi){ applyCviToUI(); }
+  if(params.stack){ $('#depth').value=params.stack.depth; $('#vDepth').textContent=params.stack.depth; const sp=Math.round(params.stack.scale*100); $('#sscale').value=sp; $('#vSscale').textContent=sp; $('#szoom').value=params.stack.zoom; $('#vSzoom').textContent=params.stack.zoom; }
+  if(params.vig){ const va=Math.round(params.vig.amount*100), vs=Math.round(params.vig.split*100); $('#vamt').value=va; $('#vVamt').textContent=va; $('#vsplit').value=vs; $('#vVsplit').textContent=vs; }
   $('#bpm').value=react.bpm; $('#vBpm').textContent=react.bpm; $('#react').value=react.strength; $('#vReact').textContent=react.strength;
   if(params.auto){ $('#autoMoveBtn').textContent='auto-move: '+(params.auto.on?'on':'off'); $('#autoMode').value=params.auto.mode; $('#autoSpeed').value=params.auto.speed; $('#vAutoSpeed').textContent=params.auto.speed; autoBase=performance.now(); }
   updateStopCount();
@@ -859,7 +859,7 @@ $('#lookFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=n
 
 // ---------- export ----------
 $('#pngBtn').onclick=()=>{ if(!srcCanvas){alert('Load something first ♡');return;}
-  const c=make(W,H), x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.filter=fxFilter(); x.drawImage(renderFx(),0,0);
+  const c=make(W,H), x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.filter=fxFilter(); x.drawImage(renderFx(),0,0); x.filter='none'; applyStack(x);
   const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='mosh.png'; a.click(); };
 
 let recorder=null, chunks=[], recMime='video/webm', recTick=null, recEndT=0;
