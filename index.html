@@ -498,9 +498,9 @@ function applyStack(ctx){                         // recursive "stack inside its
   ctx.imageSmoothingEnabled=false;
   if(s.zoom>0){ const zt=(t*s.zoom*0.012)%1;
     ctx.clearRect(0,0,W,H);
-    for(let k=s.depth+1;k>=-1;k--){ const e=k+zt; const f=Math.pow(sc,e); const w=W*f,h=H*f; ctx.drawImage(stackCv,0,0,W,H,cx-w/2,cy-h/2,w,h); }
+    for(let k=-1;k<=s.depth+1;k++){ const e=k+zt; const f=Math.pow(sc,e); const w=W*f,h=H*f; ctx.drawImage(stackCv,0,0,W,H,cx-w/2,cy-h/2,w,h); }   // largest first (back) → smallest last (front, centre)
   } else {
-    for(let k=s.depth;k>=1;k--){ const f=Math.pow(sc,k); const w=W*f,h=H*f; ctx.drawImage(stackCv,0,0,W,H,cx-w/2,cy-h/2,w,h); }
+    for(let k=1;k<=s.depth;k++){ const f=Math.pow(sc,k); const w=W*f,h=H*f; ctx.drawImage(stackCv,0,0,W,H,cx-w/2,cy-h/2,w,h); }   // 50% first, then 25%, 12.5%… each smaller copy on top
   }
 }
 function fitPreview(){                        // set CSS display size so a small photo still fills the stage
