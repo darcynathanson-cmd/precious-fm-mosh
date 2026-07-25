@@ -140,8 +140,8 @@
       <!-- STEP 3 · ADJUST -->
       <div class="step">
         <span class="num">3 · Adjust</span>
-        <button id="surpriseBtn" class="bigbtn" style="margin-bottom:6px;background:linear-gradient(90deg,var(--pink),var(--accent))" title="Jump to a hand-tuned full look — click again for the next">✨ surprise me</button>
-        <div class="hint" id="surpriseName" style="margin:0 0 12px;text-align:center">a curated look — click for the next</div>
+        <button id="surpriseBtn" class="bigbtn" style="margin-bottom:6px;background:linear-gradient(90deg,var(--pink),var(--accent))" title="Roll a brand-new totally random look — click again for another">✨ surprise me</button>
+        <div class="hint" id="surpriseName" style="margin:0 0 12px;text-align:center">a totally random surprise — click for another</div>
         <div class="ctl"><label title="How wild the glitch is">Intensity <b id="vPower">1.7</b></label><input type="range" id="power" min="0.3" max="3.5" step="0.1" value="1.7"></div>
         <div class="ctl"><label title="Chunky vs fine blocks">Block size <b id="vBlock">16</b></label><input type="range" id="block" min="6" max="48" step="2" value="16"></div>
         <div class="ctl"><label title="Higher = more of your original photo stays visible">Keep original <b id="vRec">7</b></label><input type="range" id="rec" min="0" max="30" step="1" value="7"></div>
@@ -219,6 +219,23 @@
           <div class="ctl"><label>🔊 Volume <b id="vVol">off</b></label><input type="range" id="vol" min="0" max="1" step="0.01" value="0"></div>
           <div class="hint">Add a track (or use the video's own sound) + turn react on → the glitch pulses to the bass. Music is baked into the recording. No track? It pulses to the BPM.<br><b>Volume</b> starts <b>off</b> so nothing blares — slide it up if you want to hear the track while working. Either way the recording keeps the music at full level and the beat still reacts.</div>
         </details>
+        <details open>
+          <summary>✨ variety — never the same twice</summary>
+          <label class="toggle" style="margin-top:8px"><input type="checkbox" id="varyOn"> keep it moving (live modulation)</label>
+          <div class="ctl" style="margin-top:8px"><label>Amount <b id="vVaryAmt">0.6</b></label><input type="range" id="varyAmt" min="0" max="1" step="0.05" value="0.6"></div>
+          <div class="row" style="gap:12px;flex-wrap:wrap">
+            <label class="toggle" style="margin:0"><input type="checkbox" id="varyWander" checked> drift</label>
+            <label class="toggle" style="margin:0"><input type="checkbox" id="varyPulse" checked> pulse</label>
+            <label class="toggle" style="margin:0"><input type="checkbox" id="varyWind" checked> wind</label>
+            <label class="toggle" style="margin:0"><input type="checkbox" id="varyBursts" checked> bursts</label>
+            <label class="toggle" style="margin:0"><input type="checkbox" id="varyCam" checked> drift-cam</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="mini" id="newSeedBtn" title="Roll a new motion field — same look, different run">🎲 new seed</button>
+            <label class="toggle" style="margin:0"><input type="checkbox" id="reseedRec" checked> new seed each recording</label>
+          </div>
+          <div class="hint"><b>Drift</b> = slow organic wander · <b>pulse</b> = breathing · <b>wind</b> = the flow direction swings · <b>bursts</b> = occasional glitch spikes · <b>drift-cam</b> = the picture slowly pans / the split wanders. <b>Seed</b> reshuffles the underlying motion field, so the same look records differently every take.</div>
+        </details>
       </div>
     </div>
 
@@ -269,7 +286,10 @@ function cropFor(m){ let iw=mw(m),ih=mh(m),targ; if(params.ratio==='src')targ=iw
 function updateSrc(){ if(!srcCanvas)return;
   const useB = (activeClip===1 && srcMediaB);
   const m = useB?srcMediaB:srcMedia, c = useB?cropB:crop;
-  if(m) srcCanvas.getContext('2d').drawImage(m, c.x,c.y,c.w,c.h, 0,0,W,H);
+  if(m){ let sx=c.x,sy=c.y,sw=c.w,sh=c.h; const V=params.vary;
+    if(V&&V.on&&V.cam){ const T=performance.now()/1000, ph=noiseSeed*0.001, z=1-0.10*V.amt*(0.5+0.5*Math.sin(T*6.2832/15+ph));
+      const nw=sw*z, nh=sh*z; sx=c.x+(sw-nw)*(0.5+0.4*Math.sin(T*6.2832/12+ph)); sy=c.y+(sh-nh)*(0.5+0.4*Math.sin(T*6.2832/18+ph*1.3)); sw=nw; sh=nh; } // drift-cam pan/zoom
+    srcCanvas.getContext('2d').drawImage(m, sx,sy,sw,sh, 0,0,W,H); }
   if(autoAB && srcMediaB){ if(++abTick % 75 === 0) activeClip=1-activeClip; }  // auto A↔B mosh transition (~2.5s)
 }
 let params={preset:'blend',power:1.7,smear:6,block:16,rec:7,speed:1.0,ratio:'4:5',crazy:true,
@@ -279,7 +299,8 @@ let params={preset:'blend',power:1.7,smear:6,block:16,rec:7,speed:1.0,ratio:'4:5
   cvi:{pixel:0, poster:0, colorize:0, palette:'neon', cycle:0, mirror:'off'},
   stack:{depth:0, scale:0.5, zoom:0},
   vig:{amount:0, split:0},
-  auto:{on:false, mode:'journey', speed:1}};
+  auto:{on:false, mode:'journey', speed:1},
+  vary:{on:false, amt:0.6, wander:true, pulse:true, wind:true, bursts:true, cam:true, reseedRec:true}};
 let splitX=0.5, splitY=0.5, dragMode=null;
 const OPTS=['blend','melt','streak','chaos','random'];              // whole-image looks
 const SOPTS=['clean','blend','melt','streak','chaos','random'];     // section options (adds 'clean' = untouched photo)
@@ -404,10 +425,11 @@ function setup(){
   preview.width=W; preview.height=H; t=0;
   fitPreview();                              // scale display to fill the stage (any image size)
   maskDirty=true; rebuildMask();
-  if(!raf) loop();                           // eases in from the clean image (see introHold in loop)
+  if(params.crazy){ introHold=0; for(let i=0;i<24;i++) step(); }   // "crazy from the first frame": pre-cook so the glitch is wild on the first painted frame
+  if(!raf) loop();                           // else eases in from the clean image (see introHold in loop)
 }
 function make(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
-function fxFilter(){ const f=params.fx; return `hue-rotate(${f.hue}deg) saturate(${f.sat}%) contrast(${f.contrast}%)`+(f.invert?' invert(1)':''); }
+function fxFilter(){ const f=params.fx; return `hue-rotate(${f.hue+varyHue}deg) saturate(${f.sat}%) contrast(${f.contrast}%)`+(f.invert?' invert(1)':''); }
 // ---------- pro glitch passes (post-mosh, pre-colour). Run at half-res for speed. ----------
 let workCv=null, workCtx=null, fbCv=null, fbCtx=null, frameHist=[];
 function sortKey(r,g,b,mode){                    // ordering key per pixel
@@ -515,13 +537,13 @@ function vignetteChannel(ctx,w,h,amount,split){  // soft OVAL vignette + RGB cha
 }
 function renderFx(){                             // returns a canvas to display (A, or a half-res processed copy)
   const g=params.glitch, vg=params.vig;
-  const active = g.sort||g.chDelay||g.trails||g.timewarp || vg.amount>0 || vg.split>0;
+  const active = g.sort||g.chDelay||g.trails||g.timewarp || vg.amount>0 || vg.split>0 || burstSort>0;
   if(!active) return A;
   const fw=Math.max(2,Math.round(W*0.5)), fh=Math.max(2,Math.round(H*0.5));
   if(!workCv||workCv.width!==fw||workCv.height!==fh){ workCv=make(fw,fh); workCtx=workCv.getContext('2d'); frameHist=[]; fbCv=null; twHist=[]; }
   workCtx.imageSmoothingEnabled=false; workCtx.clearRect(0,0,fw,fh); workCtx.drawImage(A,0,0,fw,fh);
   if(g.chDelay>0) channelDelay(workCtx, fw, fh, Math.round(g.chDelay));
-  if(g.sort>0)    pixelSort(workCtx, fw, fh, g.sort, g.sortThresh, g.sortDir||'h', g.sortMode||'bright');
+  const sortAmt=Math.max(g.sort,burstSort); if(sortAmt>0) pixelSort(workCtx, fw, fh, sortAmt, g.sortThresh, g.sortDir||'h', g.sortMode||'bright');
   if(g.trails>0)  trails(workCtx, fw, fh, g.trails);
   timeWarp(workCtx, fw, fh, g.timewarp||0);
   if(vg.amount>0||vg.split>0) vignetteChannel(workCtx, fw, fh, vg.amount, vg.split);
@@ -553,7 +575,23 @@ function fitPreview(){                        // set CSS display size so a small
 window.addEventListener('resize', fitPreview);
 
 // ---------- motion ----------
-function hash(n){const s=Math.sin(n*127.1)*43758.5453; return s-Math.floor(s);}
+function hash(n){const s=Math.sin((n+noiseSeed)*127.1)*43758.5453; return s-Math.floor(s);}
+// ---------- variety engine: a per-run seed + live modulation so no two runs match ----------
+let noiseSeed=0;
+function newSeed(){ noiseSeed=Math.floor(Math.random()*1e6); frameHist=[]; twHist=[]; }
+function vnoise(x){ const i=Math.floor(x),fr=x-i,a=hash(i*1.37+11.1),b=hash((i+1)*1.37+11.1),u=fr*fr*(3-2*fr); return a+(b-a)*u; } // smooth 1-D noise 0..1
+let varyPow=1, windAng=0, varyHue=0, burstSort=0;
+function applyVariety(){
+  varyPow=1; windAng=0; varyHue=0; burstSort=0;
+  const V=params.vary; if(!V||!V.on) return;
+  const amt=V.amt, T=performance.now()/1000, ph=noiseSeed*0.001;
+  if(V.wander){ varyPow *= 1 + amt*0.7*(vnoise(T*0.15+ph)*2-1); }                       // slow organic drift
+  if(V.pulse){ varyPow *= 1 + amt*0.22*Math.sin(T*6.2832/6.7 + ph); varyHue += amt*35*Math.sin(T*6.2832/9.3+ph); } // breathing (incommensurate periods)
+  if(V.wind){ windAng = amt*Math.PI*0.9*Math.sin(T*6.2832/13.0 + ph); varyHue += amt*140*Math.sin(T*6.2832/17.0+ph*1.7); }
+  if(V.bursts){ const period=3.2, p=(T/period+ph)%1, hit=hash(Math.floor(T/period)+ph*3);   // random chance of a burst window per period
+    if(hit>0.55 && p<0.22){ const env=Math.sin(p/0.22*Math.PI); varyPow*=1+amt*1.4*env; burstSort=amt*80*env; } }
+  varyPow=Math.max(0.2,varyPow);
+}
 function sectionOf(fx,fy){                 // fx,fy in 0..1 -> which section
   if(MASK[params.shape]){ if(!maskFlags)return 0;
     const xi=Math.min(W-1,Math.max(0,Math.round(fx*W))), yi=Math.min(H-1,Math.max(0,Math.round(fy*H)));
@@ -566,7 +604,7 @@ function sectionOf(fx,fy){                 // fx,fy in 0..1 -> which section
 }
 function presetAt(bx,by){ return params.where==='split' ? params.sections[sectionOf(bx/cols,by/rows)] : params.preset; }
 function motion(preset,bx,by,tt){            // displacement for a non-'clean' block
-  const p=params, sp=tt*0.045*p.speed, P=p.power*beatMul;   // P pulses with the beat
+  const p=params, sp=tt*0.045*p.speed, P=p.power*beatMul*varyPow;   // P pulses with the beat + variety drift
   const nx=(hash(bx*1.7+by*3.3)-0.5), ny=(hash(bx*2.9+by*1.1+9)-0.5);
   const turb=(Math.cos(sp+bx*0.3)*nx+Math.sin(sp+by*0.3)*ny);
   let dx=0,dy=0;
@@ -575,6 +613,7 @@ function motion(preset,bx,by,tt){            // displacement for a non-'clean' b
   else if(preset==='chaos'){ const cxp=(bx-cols/2),cyp=(by-rows/2); dx=(-cyp*0.10+nx*3)*P; dy=(cxp*0.10+ny*3)*P; }
   else if(preset==='random'){ const seg=Math.floor(tt/80),fr=(tt%80)/80; const a1=hash(seg*3.1)*6.283,a2=hash((seg+1)*3.1)*6.283,ang=a1*(1-fr)+a2*fr; const mag=(2+hash(seg*1.7)*4)*P; dx=Math.cos(ang)*mag+2.2*turb; dy=Math.sin(ang)*mag+1.4*turb; }
   else { const cxp=(bx-cols/2),cyp=(by-rows/2); dx=(5*P)+(-cyp*0.06)*P+2*turb; dy=(cxp*0.06)*P+1.4*turb+0.8*P; }
+  if(windAng){ const ca=Math.cos(windAng),sa=Math.sin(windAng),rx=dx*ca-dy*sa,ry=dx*sa+dy*ca; dx=rx; dy=ry; }   // wind: swing the flow direction
   return [dx,dy];
 }
 
@@ -593,7 +632,7 @@ function step(){
     const sx=Math.max(0,Math.min(W-bs,x0+Math.round(dx))), sy=Math.max(0,Math.min(H-bs,y0+Math.round(dy)));
     bx2.drawImage(A,sx,sy,bs,bs,x0,y0,bs,bs);
   }
-  const P=params.power*beatMul;
+  const P=params.power*beatMul*varyPow;
   const seed=Math.floor(t/3), ntear=Math.round(cols*rows*0.035*(0.5+P/2));
   for(let i=0;i<ntear;i++){
     const bx=Math.floor(hash(seed*13.1+i*7.7)*cols), by=Math.floor(hash(seed*5.3+i*2.1)*rows);
@@ -634,16 +673,16 @@ function applyAuto(mode,p){
   if(mode==='custom'){ if(stops.length<2)return; const seg=p*(stops.length-1), i=Math.min(stops.length-2,Math.floor(seg)); applyStopLerp(stops[i],stops[i+1],seg-i); return; }
   const tri=1-Math.abs(2*p-1);
   if(mode==='intensity'){ aSet(params,'power',+(0.6+2.7*ease(p)).toFixed(1)); aSet(params,'block',Math.round(8+34*ease((p+0.5)%1))); }
-  else if(mode==='colour'){ aSet(params.cvi,'colorize',Math.round(92*tri)); aSet(params.cvi,'cycle',3); aSet(params.fx,'hue',Math.round(360*p)); }
+  else if(mode==='colour'){ aSet(params.fx,'hue',Math.round(360*p)); aSet(params.fx,'sat',Math.round(100+180*tri)); aSet(params.fx,'contrast',Math.round(100+30*tri)); }
   else if(mode==='sort'){ aSet(params.glitch,'sort',Math.round(92*tri)); aSet(params.glitch,'sortThresh',Math.round(70+130*p)); }
   else if(mode==='smear'){ aSet(params.glitch,'chDelay',Math.round(11*ease(p))); aSet(params.glitch,'trails',Math.round(72*ease(p))); aSet(params.glitch,'timewarp',Math.round(85*ease(p))); }
   else if(mode==='random'){ const s=Math.floor(p*8);
     aSet(params,'power',+(0.6+2.9*hash(s*1.7)).toFixed(1)); aSet(params,'block',Math.round(8+38*hash(s*3.1+2)));
-    aSet(params.cvi,'colorize',Math.round(90*hash(s*2.3+5))); aSet(params.glitch,'sort',Math.round(90*hash(s*4.1+7))); }
+    aSet(params.fx,'sat',Math.round(60+200*hash(s*2.3+5))); aSet(params.glitch,'sort',Math.round(90*hash(s*4.1+7))); }
   else { // journey — three acts across the clip
-    if(p<0.34){ const q=p/0.34; aSet(params,'power',+(0.6+2.7*ease(q)).toFixed(1)); aSet(params.cvi,'colorize',0); aSet(params.glitch,'sort',0); }
-    else if(p<0.67){ const q=(p-0.34)/0.33; aSet(params.cvi,'colorize',Math.round(90*ease(q))); aSet(params.cvi,'cycle',3); }
-    else { const q=(p-0.67)/0.33; aSet(params.cvi,'colorize',0); aSet(params.glitch,'sort',Math.round(90*ease(q))); aSet(params.glitch,'trails',Math.round(55*ease(q))); } }
+    if(p<0.34){ const q=p/0.34; aSet(params,'power',+(0.6+2.7*ease(q)).toFixed(1)); aSet(params.fx,'hue',0); aSet(params.fx,'sat',100); aSet(params.glitch,'sort',0); aSet(params.glitch,'trails',0); }   // act 1: intensity swell (clean colour/sort)
+    else if(p<0.67){ const q=(p-0.34)/0.33; aSet(params.fx,'hue',Math.round(360*q)); aSet(params.fx,'sat',Math.round(100+150*ease(q))); }   // act 2: colour trip (renders via fxFilter)
+    else { const q=(p-0.67)/0.33; aSet(params.fx,'hue',0); aSet(params.fx,'sat',100); aSet(params.glitch,'sort',Math.round(90*ease(q))); aSet(params.glitch,'trails',Math.round(55*ease(q))); } }   // act 3: pixel-sort + trails
 }
 $('#autoMoveBtn').onclick=()=>{ params.auto.on=!params.auto.on; $('#autoMoveBtn').textContent='auto-move: '+(params.auto.on?'on':'off'); autoBase=performance.now(); };
 $('#autoMode').onchange=e=>{ params.auto.mode=e.target.value; autoBase=performance.now(); };
@@ -658,10 +697,13 @@ $('#clearStops').onclick=()=>{ stops=[]; updateStopCount(); };
 
 function loop(){
   beatMul=computeBeat();                       // glitch intensity pulses with the beat
+  applyVariety();                              // live modulation (drift/pulse/wind/bursts) — no two runs alike
   if(params.auto.on){ if(!autoBase)autoBase=performance.now();
     const period=(recorder?recDurSec:8)*1000/(params.auto.speed||1);
     applyAuto(params.auto.mode, ((performance.now()-autoBase)%period)/period); }
-  if(srcAnimated||srcAnimatedB||srcMediaB) updateSrc();   // refresh source (video/gif frame, or A↔B swap)
+  if(srcAnimated||srcAnimatedB||srcMediaB || (params.vary&&params.vary.on&&params.vary.cam)) updateSrc();   // refresh source (video/gif frame, A↔B swap, or drift-cam)
+  if(params.vary&&params.vary.on&&params.vary.cam&&params.where==='split'){ const T=performance.now()/1000, ph=noiseSeed*0.001, a=params.vary.amt;
+    splitX=0.5+0.3*a*Math.sin(T*6.2832/11+ph); splitY=0.5+0.3*a*Math.sin(T*6.2832/14+ph*1.4); maskDirty=true; }   // drift-cam: wander the section split
   if(introHold>0){                             // show the clean image briefly so you see your "before"
     introHold--; if(A&&srcCanvas) A.getContext('2d').drawImage(srcCanvas,0,0);
     if(A){ pctx.imageSmoothingEnabled=false; pctx.filter=fxFilter(); pctx.drawImage(A,0,0,W,H); pctx.filter='none'; }
@@ -809,7 +851,7 @@ function bind(id,key){const el=$('#'+id), out=$('#v'+id.charAt(0).toUpperCase()+
   el.addEventListener('input',()=>{params[key]=parseFloat(el.value); if(out)out.textContent=el.value;});}
 bind('power','power'); bind('smear','smear'); bind('block','block'); bind('rec','rec'); bind('speed','speed');
 $('#ratio').onchange=e=>{params.ratio=e.target.value; setup();};
-$('#crazy').onchange=e=>params.crazy=e.target.checked;
+$('#crazy').onchange=e=>{ params.crazy=e.target.checked; if(params.crazy && A){ introHold=0; for(let i=0;i<24;i++) step(); } };
 $('#resetBtn').onclick=()=>{if(srcCanvas){A.getContext('2d').clearRect(0,0,W,H);A.getContext('2d').drawImage(srcCanvas,0,0);t=0;}};
 function setSlider(id,key,v){const el=$('#'+id); el.value=v; params[key]=parseFloat(v); const out=$('#v'+id.charAt(0).toUpperCase()+id.slice(1)); if(out)out.textContent=v;}
 let undoSnap=null;
@@ -817,7 +859,7 @@ function snapshot(){ undoSnap={params:JSON.parse(JSON.stringify(params)), splitX
 $('#undoBtn').onclick=()=>{ if(!undoSnap)return; const s=undoSnap; undoSnap=null;
   Object.assign(params,s.params); splitX=s.splitX; splitY=s.splitY; resyncUI(); maskDirty=true; rebuildMask(); };
 $('#randBtn').onclick=()=>{
-  snapshot();
+  snapshot(); newSeed();
   if(params.where==='split'){ const n=(params.shape==='circle'||MASK[params.shape])?2:4; for(let i=0;i<n;i++)params.sections[i]=SOPTS[Math.floor(Math.random()*SOPTS.length)]; buildSectionPickers(); }
   else { params.preset=OPTS[Math.floor(Math.random()*OPTS.length)]; [...$('#chips').children].forEach(x=>x.classList.toggle('on',x.dataset.p===params.preset)); }
   setSlider('power','power',(0.8+Math.random()*2.2).toFixed(1));
@@ -825,26 +867,31 @@ $('#randBtn').onclick=()=>{
   setSlider('rec','rec',String(Math.floor(Math.random()*20)));
 };
 
-// ---------- ✨ surprise me: hand-tuned full looks ----------
-const LOOKBOOK=[
-  {name:'Cotton candy melt', preset:'melt', power:1.8, block:14, rec:8, smear:7, speed:1.0,
-    fx:{hue:310,sat:150,contrast:108,invert:0}, glitch:{sort:0,sortThresh:120,sortDir:'h',sortMode:'bright',chDelay:3,trails:35,timewarp:0}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.20,split:0.10}},
-  {name:'Acid rain', preset:'streak', power:2.2, block:12, rec:5, smear:6, speed:1.2,
-    fx:{hue:80,sat:240,contrast:130,invert:0}, glitch:{sort:75,sortThresh:110,sortDir:'v',sortMode:'hue',chDelay:0,trails:0,timewarp:0}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.15,split:0}},
-  {name:'Liquid time', preset:'chaos', power:2.0, block:18, rec:6, smear:9, speed:1.0,
-    fx:{hue:200,sat:130,contrast:110,invert:0}, glitch:{sort:0,sortThresh:120,sortDir:'h',sortMode:'bright',chDelay:8,trails:40,timewarp:80}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.25,split:0.30}},
-  {name:'Chrome smear', preset:'blend', power:1.6, block:20, rec:7, smear:11, speed:0.9,
-    fx:{hue:0,sat:20,contrast:150,invert:0}, glitch:{sort:0,sortThresh:120,sortDir:'h',sortMode:'bright',chDelay:6,trails:20,timewarp:0}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.30,split:0.10}},
-  {name:'Droste dream', preset:'melt', power:1.4, block:16, rec:9, smear:6, speed:0.8,
-    fx:{hue:270,sat:140,contrast:110,invert:0}, glitch:{sort:0,sortThresh:120,sortDir:'h',sortMode:'bright',chDelay:0,trails:25,timewarp:0}, stack:{depth:3,scale:0.55,zoom:4}, vig:{amount:0.35,split:0.20}},
-  {name:'VHS bleed', preset:'streak', power:1.7, block:10, rec:8, smear:6, speed:1.0,
-    fx:{hue:190,sat:90,contrast:120,invert:0}, glitch:{sort:0,sortThresh:120,sortDir:'h',sortMode:'bright',chDelay:9,trails:45,timewarp:0}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.45,split:0.50}},
-  {name:'Rainbow shred', preset:'chaos', power:2.4, block:12, rec:4, smear:7, speed:1.3,
-    fx:{hue:0,sat:180,contrast:125,invert:0}, glitch:{sort:90,sortThresh:90,sortDir:'v',sortMode:'hue',chDelay:0,trails:0,timewarp:20}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.10,split:0}},
-  {name:'Ghost echo', preset:'blend', power:1.5, block:16, rec:5, smear:8, speed:0.9,
-    fx:{hue:220,sat:110,contrast:115,invert:0}, glitch:{sort:0,sortThresh:120,sortDir:'h',sortMode:'bright',chDelay:5,trails:70,timewarp:45}, stack:{depth:0,scale:0.5,zoom:0}, vig:{amount:0.20,split:0.15}}
-];
-let lookIdx=0;
+// ---------- ✨ surprise me: a fresh TOTAL-RANDOM look every press ----------
+function rr(lo,hi){ return lo+Math.random()*(hi-lo); }
+function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function rchance(p){ return Math.random()<p; }
+function randomLookObj(){                     // a coherent-but-genuinely-random full look (not a fixed preset)
+  const d = rchance(0.22)?Math.floor(rr(2,5)):0;   // occasional Droste stack
+  return {
+    name:'random',
+    preset: rpick(OPTS),
+    power: +rr(0.9,2.8).toFixed(1),
+    block: 8+2*Math.floor(rr(0,19)),
+    rec:   Math.floor(rr(3,15)),                    // keep some original so it never washes to mud
+    smear: 4+Math.floor(rr(0,8)),
+    speed: +rr(0.6,1.6).toFixed(1),
+    fx: { hue: rchance(0.72)?Math.floor(rr(0,360)):0, sat: Math.floor(rr(70,240)),
+          contrast: Math.floor(rr(95,145)), invert: rchance(0.06)?1:0 },
+    glitch: { sort: rchance(0.45)?Math.floor(rr(40,95)):0, sortThresh: Math.floor(rr(80,170)),
+              sortDir: rpick(['h','v']), sortMode: rpick(['bright','dark','hue']),
+              chDelay: rchance(0.40)?Math.floor(rr(2,12)):0,
+              trails:  rchance(0.40)?Math.floor(rr(20,72)):0,
+              timewarp:rchance(0.30)?Math.floor(rr(30,88)):0 },
+    stack: { depth:d, scale:+rr(0.46,0.6).toFixed(2), zoom:(d&&rchance(0.6))?Math.floor(rr(2,7)):0 },
+    vig: { amount: rchance(0.5)?+rr(0.1,0.4).toFixed(2):0, split: rchance(0.4)?+rr(0.1,0.45).toFixed(2):0 }
+  };
+}
 function applyLook(L){
   snapshot();
   params.where='whole'; if(L.preset)params.preset=L.preset;
@@ -856,8 +903,8 @@ function applyLook(L){
   frameHist=[]; twHist=[];
   resyncUI();
 }
-$('#surpriseBtn').onclick=()=>{ const L=LOOKBOOK[lookIdx%LOOKBOOK.length]; lookIdx++; applyLook(L);
-  const n=$('#surpriseName'); if(n)n.textContent='✨ '+L.name+'  ·  '+(((lookIdx-1)%LOOKBOOK.length)+1)+'/'+LOOKBOOK.length; };
+$('#surpriseBtn').onclick=()=>{ newSeed(); applyLook(randomLookObj());
+  const n=$('#surpriseName'); if(n)n.textContent='✨ a totally random surprise — click for another'; };
 
 // ---------- colour fx wiring ----------
 function applyFxToUI(){ $('#hue').value=params.fx.hue; $('#sat').value=params.fx.sat; $('#contrast').value=params.fx.contrast; $('#invert').checked=!!params.fx.invert;
@@ -902,8 +949,19 @@ $('#bpm').addEventListener('input',e=>{ react.bpm=parseFloat(e.target.value); $(
 $('#react').addEventListener('input',e=>{ react.strength=parseFloat(e.target.value); $('#vReact').textContent=e.target.value; });
 $('#vol').addEventListener('input',e=>{ monitorVol=parseFloat(e.target.value); if(monitorGain) monitorGain.gain.value=monitorVol; $('#vVol').textContent=monitorVol<=0?'off':Math.round(monitorVol*100)+'%'; });
 
+// ---------- variety wiring ----------
+function syncVaryUI(){ const V=params.vary; if(!V)return;
+  $('#varyOn').checked=!!V.on; $('#varyAmt').value=V.amt; $('#vVaryAmt').textContent=V.amt;
+  $('#varyWander').checked=!!V.wander; $('#varyPulse').checked=!!V.pulse; $('#varyWind').checked=!!V.wind;
+  $('#varyBursts').checked=!!V.bursts; $('#varyCam').checked=!!V.cam; $('#reseedRec').checked=!!V.reseedRec; }
+$('#varyOn').onchange=e=>params.vary.on=e.target.checked;
+$('#varyAmt').addEventListener('input',e=>{ params.vary.amt=parseFloat(e.target.value); $('#vVaryAmt').textContent=e.target.value; });
+[['varyWander','wander'],['varyPulse','pulse'],['varyWind','wind'],['varyBursts','bursts'],['varyCam','cam'],['reseedRec','reseedRec']]
+  .forEach(([id,k])=>$('#'+id).onchange=e=>params.vary[k]=e.target.checked);
+$('#newSeedBtn').onclick=()=>newSeed();
+
 // ---------- save / load a look ----------
-function collectLook(){ return {app:'mosh',v:1, params:JSON.parse(JSON.stringify(params)), splitX, splitY, react:{bpm:react.bpm,strength:react.strength}, stops:JSON.parse(JSON.stringify(stops))}; }
+function collectLook(){ return {app:'mosh',v:1, noiseSeed, params:JSON.parse(JSON.stringify(params)), splitX, splitY, react:{bpm:react.bpm,strength:react.strength}, stops:JSON.parse(JSON.stringify(stops))}; }
 function resyncUI(){
   if(params.shape==='text') params.shape='cross';   // typed-word masks removed
   [...$('#chips').children].forEach(x=>x.classList.toggle('on',x.dataset.p===params.preset));
@@ -922,6 +980,7 @@ function resyncUI(){
   if(params.vig){ const va=Math.round(params.vig.amount*100), vs=Math.round(params.vig.split*100); $('#vamt').value=va; $('#vVamt').textContent=va; $('#vsplit').value=vs; $('#vVsplit').textContent=vs; }
   $('#bpm').value=react.bpm; $('#vBpm').textContent=react.bpm; $('#react').value=react.strength; $('#vReact').textContent=react.strength;
   if(params.auto){ $('#autoMoveBtn').textContent='auto-move: '+(params.auto.on?'on':'off'); $('#autoMode').value=params.auto.mode; $('#autoSpeed').value=params.auto.speed; $('#vAutoSpeed').textContent=params.auto.speed; autoBase=performance.now(); }
+  if(params.vary) syncVaryUI();
   updateStopCount();
   buildSectionPickers();
 }
@@ -932,6 +991,7 @@ $('#lookFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=n
       if(typeof o.splitX==='number')splitX=o.splitX; if(typeof o.splitY==='number')splitY=o.splitY;
       if(o.react){ react.bpm=o.react.bpm||react.bpm; react.strength=o.react.strength||react.strength; }
       if(Array.isArray(o.stops)) stops=o.stops;
+      if(typeof o.noiseSeed==='number') noiseSeed=o.noiseSeed;
       resyncUI(); if(srcMedia) setup(); else { maskDirty=true; rebuildMask(); }
     }catch(_){ alert("That file isn't a saved look ♡"); } };
   rd.readAsText(f); };
@@ -946,6 +1006,7 @@ $('#recBtn').onclick=function(){
   if(!A){alert('Load something first ♡');return;}
   if(recorder){recorder.stop();return;}
   autoBase=performance.now(); recDurSec=parseFloat($('#dur').value);   // align auto-move to one pass over the clip
+  if(params.vary&&params.vary.reseedRec) newSeed();   // fresh performance each recording
   recMime='video/mp4;codecs=avc1.42E01E';
   if(!MediaRecorder.isTypeSupported(recMime)) recMime='video/webm;codecs=vp9';
   if(!MediaRecorder.isTypeSupported(recMime)) recMime='video/webm';
