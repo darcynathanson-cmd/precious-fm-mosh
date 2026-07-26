@@ -105,6 +105,11 @@
       <!-- STEP 2 · STYLE -->
       <div class="step">
         <span class="num">2 · Style</span>
+        <div class="seg" id="modeSeg" style="margin-bottom:8px">
+          <button data-mode="mosh" class="on">datamosh</button>
+          <button data-mode="shapes">shapes ✿</button>
+        </div>
+        <div id="moshStyle">
         <div class="seg" id="whereSeg">
           <button data-w="whole" class="on">whole</button>
           <button data-w="split">sections</button>
@@ -153,6 +158,37 @@
             <div class="ctl"><label title="Chromatic split for any region set to 'channel'">Channel break <b id="vShapeChan">50</b></label><input type="range" id="shapeChan" min="0" max="100" step="2" value="50"></div>
           </div>
           <div class="row" style="margin-top:8px"><button class="mini" id="shuffleBtn">🎲 shuffle</button><button class="mini" id="centerBtn">re-center</button></div>
+        </div>
+        </div><!-- /moshStyle -->
+        <div id="shapesPanel" style="display:none">
+          <div class="seg">
+            <button data-sstyle="bloom" class="on">solid bloom</button>
+            <button data-sstyle="portal">glitch portals</button>
+          </div>
+          <select id="sShape" style="width:100%;margin-top:9px;border:2px solid var(--line);border-radius:9px;padding:8px 10px;font-weight:600;color:var(--ink)">
+            <optgroup label="geometric">
+              <option value="circle">● circle</option><option value="heart">♥ heart</option><option value="star">★ star</option><option value="flower">✿ flower</option><option value="butterfly">🦋 butterfly</option><option value="mix">🎲 mix</option>
+            </optgroup>
+            <optgroup label="Precious FM shapes">
+              <option value="apple">apple</option><option value="hibiscus">hibiscus</option><option value="bunny">bunny in cup</option><option value="palm">palm badge</option><option value="bloom">bloom badge</option><option value="script">Precious script</option><option value="gothic">gothic FM</option><option value="wordmark">PRECIOUS wordmark</option><option value="technogirl">techno girl</option>
+            </optgroup>
+            <option value="__upload">＋ upload your own SVG…</option>
+          </select>
+          <div class="ctl" style="margin-top:10px"><label>Size <b id="vSsize">16</b></label><input type="range" id="sSize" min="8" max="120" step="2" value="16"></div>
+          <div class="row"><select id="sMotion" style="flex:1;border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:600;color:var(--ink)">
+            <option value="arc">motion: bloom + arc</option><option value="gentle">motion: gentle drift</option><option value="rain">motion: rain</option>
+          </select></div>
+          <label class="toggle"><input type="checkbox" id="sSwim" checked> swim (arc)</label>
+          <label class="toggle"><input type="checkbox" id="sDark"> dark peak (portals)</label>
+          <div class="row" style="margin-top:8px">
+            <select id="sColorMode" style="flex:1;border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:600;color:var(--ink)"><option value="photo">colour: from photo</option><option value="palette">colour: palette</option></select>
+            <select id="sPalette" style="flex:1;border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:600;color:var(--ink)"><option value="candy">candy</option><option value="rainbow">rainbow</option><option value="sunset">sunset</option><option value="mint">mint</option><option value="mono">mono</option></select>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <select id="sBg" style="flex:1;border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:600;color:var(--ink)"><option value="candy">bg: candy</option><option value="white">bg: white</option><option value="cream">bg: cream</option><option value="ink">bg: ink</option><option value="black">bg: black</option><option value="transparent">bg: transparent</option></select>
+            <button class="mini" id="sRand" title="Randomise a shapes look">🎲 surprise</button>
+          </div>
+          <div class="hint">Rebuild the picture from shapes. <b>Solid bloom</b> = coloured shapes. <b>Glitch portals</b> = shapes as windows onto a churning glitch (apple / bunny / hibiscus too). Load a photo, dial it, then use 🎬 <b>Festival export</b> below for a clean 10-second clip.</div>
         </div>
       </div>
 
@@ -271,6 +307,8 @@
         <button id="recBtn" title="Record the live preview for the chosen length (MP4 where supported, else webm). Includes music if added.">● Record video</button>
         <button id="pngBtn" title="Save the current frame as a PNG still" style="background:var(--pink2);color:var(--accent)">Save frame (PNG)</button>
       </div>
+      <button id="festBtn" class="bigbtn" style="margin-top:9px;background:linear-gradient(90deg,#7c5cff,#ff5db1)" title="Export a Design-in-Motion-Festival clip: 1080×1920, 25fps, 10s, silent MP4">🎬 Festival export · 1080×1920 · 10s · silent</button>
+      <div class="hint" id="festHint">Renders a clean 9:16 / 25fps / 10-second silent MP4 (DMF spec). Takes a few seconds — leave the tab focused.</div>
       <div class="row" style="margin-top:9px">
         <button class="mini" id="replaceBtn" title="Load a different file">change file</button>
         <button class="mini" id="saveLookBtn" title="Download all current settings to reuse later">💾 save look</button>
@@ -301,7 +339,7 @@ function updateSrc(){ if(!srcCanvas)return;
   const useB = (activeClip===1 && srcMediaB);
   const m = useB?srcMediaB:srcMedia, c = useB?cropB:crop;
   if(m){ let sx=c.x,sy=c.y,sw=c.w,sh=c.h; const V=params.vary;
-    if(V&&V.on&&V.cam){ const T=performance.now()/1000, ph=noiseSeed*0.001, z=1-0.10*V.amt*(0.5+0.5*Math.sin(T*6.2832/15+ph));
+    if(V&&V.on&&V.cam){ const T=nowMs()/1000, ph=noiseSeed*0.001, z=1-0.10*V.amt*(0.5+0.5*Math.sin(T*6.2832/15+ph));
       const nw=sw*z, nh=sh*z; sx=c.x+(sw-nw)*(0.5+0.4*Math.sin(T*6.2832/12+ph)); sy=c.y+(sh-nh)*(0.5+0.4*Math.sin(T*6.2832/18+ph*1.3)); sw=nw; sh=nh; } // drift-cam pan/zoom
     srcCanvas.getContext('2d').drawImage(m, sx,sy,sw,sh, 0,0,W,H); }
   if(autoAB && srcMediaB){ if(++abTick % 75 === 0) activeClip=1-activeClip; }  // auto A↔B mosh transition (~2.5s)
@@ -313,7 +351,8 @@ let params={preset:'blend',power:1.7,smear:6,block:16,rec:7,speed:1.0,ratio:'4:5
   cvi:{pixel:0, poster:0, colorize:0, palette:'neon', cycle:0, mirror:'off'},
   stack:{depth:0, scale:0.5, zoom:0},
   auto:{on:false, mode:'journey', speed:1},
-  vary:{on:false, amt:0.6, wander:true, pulse:true, wind:true, bursts:true, cam:true, reseedRec:true}};
+  vary:{on:false, amt:0.6, wander:true, pulse:true, wind:true, bursts:true, cam:true, reseedRec:true},
+  mode:'mosh', shapes:{style:'bloom', shape:'circle', spacing:16, motion:'arc', swim:true, dark:false, colorMode:'photo', palette:'candy', bg:'candy'}};
 let splitX=0.5, splitY=0.5, dragMode=null;
 const OPTS=['blend','melt','streak','chaos','random'];              // whole-image looks
 const SOPTS=['clean','blend','melt','streak','chaos','random','channel']; // section options ('clean' = untouched photo, 'channel' = RGB channel-break)
@@ -331,6 +370,7 @@ const SHAPES=[
 ];
 // mask shapes: key -> loaded silhouette <img> (a 2-region inside/outside mask). Baked SVGs + user uploads.
 const MASK={}, SHAPE_AR={};
+let shpCells=[], shpKey='', shpTile=null, shpTctx=null;   // shapes-mode state
 SHAPES.forEach(sp=>{ SHAPE_AR[sp.k]=sp.ar; const im=new Image(); im.onload=()=>{ MASK[sp.k]=im; if(params.shape===sp.k){maskDirty=true;} }; im.src=sp.uri; });
 const SIZED=s=> s==='circle'||MASK[s];
 let maskCv=null, maskCtx=null, maskFlags=null, maskDirty=true;
@@ -338,6 +378,8 @@ let maskCv=null, maskCtx=null, maskFlags=null, maskDirty=true;
 let beatMul=1, audioEl=null, audioCtx=null, analyser=null, freqData=null, audioDest=null, monitorGain=null, monitorVol=0;
 function monitorOut(){ if(!monitorGain){ monitorGain=audioCtx.createGain(); monitorGain.gain.value=monitorVol; monitorGain.connect(audioCtx.destination); } return monitorGain; }
 const react={on:false, strength:1.2, bpm:128, hasAudio:false};
+let exportT=null, exporting=false;               // deterministic export: frame-indexed clock + rAF pause
+function nowMs(){ return exportT!=null ? exportT*1000 : performance.now(); }
 function computeBeat(){
   if(!react.on) return 1;
   if(react.hasAudio && analyser){
@@ -345,7 +387,7 @@ function computeBeat(){
     let s=0,n=6; for(let i=0;i<n;i++)s+=freqData[i]; const bass=s/n/255;
     return 1 + Math.max(0,bass-0.12)*3.0*react.strength;
   }
-  const period=60/react.bpm*1000, ph=(performance.now()%period)/period;
+  const period=60/react.bpm*1000, ph=(nowMs()%period)/period;
   return 1 + Math.pow(1-ph,2.5)*1.4*react.strength;
 }
 function shapeDims(){                          // pixel size of the current shape (radius = half the larger side)
@@ -437,7 +479,7 @@ function setup(){
   W=Math.max(2,Math.round(cw*scale)); H=Math.max(2,Math.round(ch*scale));
   srcCanvas=make(W,H); updateSrc();          // draw first frame (video/gif/still)
   A=make(W,H); B=make(W,H); A.getContext('2d').drawImage(srcCanvas,0,0);
-  preview.width=W; preview.height=H; t=0;
+  preview.width=W; preview.height=H; t=0; shpKey='';
   fitPreview();                              // scale display to fill the stage (any image size)
   maskDirty=true; rebuildMask();
   if(params.crazy){ introHold=0; for(let i=0;i<24;i++) step(); }   // "crazy from the first frame": pre-cook so the glitch is wild on the first painted frame
@@ -600,7 +642,7 @@ let varyPow=1, windAng=0, varyHue=0, burstSort=0;
 function applyVariety(){
   varyPow=1; windAng=0; varyHue=0; burstSort=0;
   const V=params.vary; if(!V||!V.on) return;
-  const amt=V.amt, T=performance.now()/1000, ph=noiseSeed*0.001;
+  const amt=V.amt, T=nowMs()/1000, ph=noiseSeed*0.001;
   if(V.wander){ varyPow *= 1 + amt*0.7*(vnoise(T*0.15+ph)*2-1); }                       // slow organic drift
   if(V.pulse){ varyPow *= 1 + amt*0.22*Math.sin(T*6.2832/6.7 + ph); varyHue += amt*35*Math.sin(T*6.2832/9.3+ph); } // breathing (incommensurate periods)
   if(V.wind){ windAng = amt*Math.PI*0.9*Math.sin(T*6.2832/13.0 + ph); varyHue += amt*140*Math.sin(T*6.2832/17.0+ph*1.7); }
@@ -711,14 +753,132 @@ $('#addStop').onclick=()=>{
   stops.push(captureStop()); updateStopCount(); params.auto.mode='custom'; $('#autoMode').value='custom'; };
 $('#clearStops').onclick=()=>{ stops=[]; updateStopCount(); };
 
+function beginExport(freshStart){                  // stop the live loop; optionally reset to a clean, pre-cooked start
+  exporting=true; if(raf){cancelAnimationFrame(raf); raf=null;}
+  if(freshStart && srcCanvas && A){ A.getContext('2d').clearRect(0,0,W,H); A.getContext('2d').drawImage(srcCanvas,0,0); t=0; introHold=0; frameHist=[]; twHist=[];
+    exportT=0; for(let i=0;i<10;i++) step(); }   // light pre-cook so frame 0 already moves
+}
+function endExport(){ exporting=false; exportT=null; if(!raf) loop(); }
+function renderExportFrame(i, N){                  // render exactly frame i of N at 25fps, deterministic
+  exportT = i/25;
+  if(params.mode!=='mosh'){ if(srcAnimated||srcMediaB){updateSrc(); shpKey='';} shpBuild(); renderShapes(N>1?i/(N-1):0); exportT=null; return; }
+  beatMul = computeBeat();
+  applyVariety();
+  if(params.auto&&params.auto.on) applyAuto(params.auto.mode, N>1 ? i/(N-1) : 0);   // one full auto-move journey across the clip
+  if(srcAnimated||srcAnimatedB||srcMediaB || (params.vary&&params.vary.on&&params.vary.cam)) updateSrc();
+  if(params.vary&&params.vary.on&&params.vary.cam&&params.where==='split'){ const T=nowMs()/1000, ph=noiseSeed*0.001, a=params.vary.amt;
+    splitX=0.5+0.3*a*Math.sin(T*6.2832/11+ph); splitY=0.5+0.3*a*Math.sin(T*6.2832/14+ph*1.4); params.shapeRot=40*a*Math.sin(T*6.2832/9+ph*0.7); maskDirty=true; }
+  if(MASK[params.shape] && maskDirty) rebuildMask();
+  const iters=Math.max(1,Math.round(params.smear/3));
+  for(let k=0;k<iters;k++) step();
+  pctx.imageSmoothingEnabled=false;
+  pctx.filter=fxFilter(); pctx.drawImage(renderFx(),0,0,W,H); pctx.filter='none';
+  applyStack(pctx);
+  exportT=null;
+}
+// ================= SHAPES MODE: solid bloom + glitch portals =================
+function sstep(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);}
+function shpHump(t){ if(t<0.12)return 0; if(t<0.30)return sstep((t-0.12)/0.18); if(t<0.62)return 1; if(t<0.86)return sstep(1-(t-0.62)/0.24); return 0; }
+const SHPPAL={candy:[[255,214,236],[255,93,177],[124,92,255],[91,214,168],[255,236,120]],rainbow:[[255,60,60],[255,160,40],[255,240,60],[60,200,90],[60,140,255],[150,80,220]],sunset:[[40,10,60],[200,40,120],[255,120,40],[255,220,90]],mint:[[10,40,60],[40,180,200],[120,230,200],[235,255,245]],mono:[[30,20,40],[255,255,255]]};
+function shpPalColor(lum,name){ const st=SHPPAL[name]||SHPPAL.candy, p=Math.max(0,Math.min(1,lum))*(st.length-1), i=Math.floor(p), fr=p-i, a=st[i], b=st[Math.min(st.length-1,i+1)]; return `rgb(${Math.round(a[0]+(b[0]-a[0])*fr)},${Math.round(a[1]+(b[1]-a[1])*fr)},${Math.round(a[2]+(b[2]-a[2])*fr)})`; }
+const MIXSET=['circle','heart','star','flower','butterfly'];
+function shpBG(){ const S=params.shapes; if(S.bg==='transparent'){ pctx.clearRect(0,0,W,H); return; } if(S.bg==='candy'){ const g=pctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#bcdcff'); g.addColorStop(1,'#ffd6ec'); pctx.fillStyle=g; } else pctx.fillStyle=({white:'#ffffff',black:'#000000',cream:'#fff6e9',ink:'#1a1030'}[S.bg]||'#ffffff'); pctx.fillRect(0,0,W,H); }
+function shpRandom(){ const S=params.shapes, pk=a=>a[Math.floor(Math.random()*a.length)]; S.style=pk(['bloom','bloom','portal']); S.shape=pk(['circle','heart','star','flower','butterfly','mix','apple','bunny','hibiscus']); S.spacing=[10,14,18,24,34,50,70][Math.floor(Math.random()*7)]; S.motion=pk(['arc','arc','gentle','rain']); S.swim=Math.random()<0.7; S.dark=Math.random()<0.4; S.colorMode=pk(['photo','photo','palette']); S.palette=pk(['candy','rainbow','sunset','mint']); S.bg=pk(['candy','candy','white','cream','ink']); noiseSeed=Math.floor(Math.random()*1e6); shpKey=''; syncShapesUI(); }
+function syncShapesUI(){ const S=params.shapes, $$=id=>document.getElementById(id); if(!$$('sShape'))return;
+  const ms=$$('modeSeg'); if(ms)[...ms.children].forEach(x=>x.classList.toggle('on',x.dataset.mode===params.mode));
+  [...document.querySelectorAll('#shapesPanel [data-sstyle]')].forEach(x=>x.classList.toggle('on',x.dataset.sstyle===S.style));
+  $$('sShape').value=S.shape; $$('sSize').value=S.spacing; $$('vSsize').textContent=S.spacing; $$('sMotion').value=S.motion; $$('sSwim').checked=!!S.swim; $$('sDark').checked=!!S.dark;
+  if($$('sColorMode'))$$('sColorMode').value=S.colorMode||'photo'; if($$('sPalette'))$$('sPalette').value=S.palette||'candy'; if($$('sBg'))$$('sBg').value=S.bg||'candy'; }
+const GEO=new Set(['circle','heart','star','flower','butterfly']);
+function shpBuild(){
+  const S=params.shapes, k2=[S.style,S.shape,S.spacing,W,H].join('|');
+  if(k2===shpKey && shpCells.length){ return; } shpKey=k2;
+  if(!srcCanvas){ shpCells=[]; return; }
+  const sp=Math.max(6,S.spacing|0), d=srcCanvas.getContext('2d').getImageData(0,0,W,H).data, q=sp>>2; shpCells=[]; let idx=0;
+  for(let gy=sp>>1; gy<H+sp; gy+=sp) for(let gx=sp>>1; gx<W+sp; gx+=sp){ idx++;
+    let rs=0,gs=0,bs=0,n=0;
+    for(let yy=Math.max(0,gy-q); yy<Math.min(H,gy+q); yy+=2) for(let xx=Math.max(0,gx-q); xx<Math.min(W,gx+q); xx+=2){ const i=(yy*W+xx)*4; rs+=d[i];gs+=d[i+1];bs+=d[i+2];n++; }
+    if(!n) continue; const r=rs/n,g=gs/n,b=bs/n, mx=Math.max(r,g,b),mn=Math.min(r,g,b), imp=Math.max((mx-mn)/255,(255-mn)/255*0.6);
+    if(S.style==='bloom' && imp<0.14) continue;
+    shpCells.push({x:gx,y:gy,col:`rgb(${r|0},${g|0},${b|0})`,imp,lum:(r*0.3+g*0.59+b*0.11)/255,mix:idx,delay:hash(idx*1.7+3),dir:hash(idx*2.9+7)*6.2832,jit:hash(idx*5.7+11)});
+  }
+}
+function shpGeom(ctx,shape,x,y,r){
+  if(shape==='circle'){ ctx.beginPath();ctx.arc(x,y,r,0,6.2832); return; }
+  if(shape==='heart'){ ctx.beginPath(); for(let a=0;a<=360;a+=14){const t=a*Math.PI/180,hx=16*Math.sin(t)**3,hy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t),X=x+hx/16*r*1.2,Y=y-hy/16*r*1.2; a?ctx.lineTo(X,Y):ctx.moveTo(X,Y);} ctx.closePath(); return; }
+  if(shape==='star'){ ctx.beginPath(); for(let k=0;k<10;k++){const rr=k%2?r*0.45:r,a=k*Math.PI/5-Math.PI/2,X=x+Math.cos(a)*rr,Y=y+Math.sin(a)*rr; k?ctx.lineTo(X,Y):ctx.moveTo(X,Y);} ctx.closePath(); return; }
+  if(shape==='flower'){ ctx.beginPath(); for(let a=0;a<360;a+=60){const t=a*Math.PI/180,ox=Math.cos(t)*r*0.62,oy=Math.sin(t)*r*0.62; ctx.moveTo(x+ox+r*0.55,y+oy);ctx.arc(x+ox,y+oy,r*0.55,0,6.2832);} return; }
+  if(shape==='butterfly'){ ctx.beginPath(); ctx.ellipse(x-r*0.45,y-r*0.35,r*0.5,r*0.62,-0.5,0,6.2832); ctx.ellipse(x+r*0.45,y-r*0.35,r*0.5,r*0.62,0.5,0,6.2832); ctx.ellipse(x-r*0.4,y+r*0.42,r*0.42,r*0.5,0.5,0,6.2832); ctx.ellipse(x+r*0.4,y+r*0.42,r*0.42,r*0.5,-0.5,0,6.2832); ctx.ellipse(x,y,r*0.12,r*0.72,0,0,6.2832); return; }
+  ctx.beginPath();ctx.arc(x,y,r,0,6.2832);
+}
+function shpDrawSolid(ctx,shape,x,y,r,col){
+  ctx.fillStyle=col;
+  if(GEO.has(shape)){ if(shape==='flower'){ for(let a=0;a<360;a+=60){const t=a*Math.PI/180,ox=Math.cos(t)*r*0.7,oy=Math.sin(t)*r*0.7; ctx.beginPath();ctx.arc(x+ox,y+oy,r*0.55,0,6.2832);ctx.fill();} ctx.fillStyle='#ffec78';ctx.beginPath();ctx.arc(x,y,r*0.4,0,6.2832);ctx.fill(); } else { shpGeom(ctx,shape,x,y,r); ctx.fill(); } return; }
+  const im=MASK[shape]; if(!im){ ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill(); return; }
+  const ar=SHAPE_AR[shape]||1; let dh=r*2,dw=dh*ar;
+  if(!shpTile){shpTile=document.createElement('canvas');shpTctx=shpTile.getContext('2d');}
+  shpTile.width=Math.max(1,Math.ceil(dw));shpTile.height=Math.max(1,Math.ceil(dh));
+  shpTctx.clearRect(0,0,dw,dh); shpTctx.globalCompositeOperation='source-over'; shpTctx.drawImage(im,0,0,dw,dh);
+  shpTctx.globalCompositeOperation='source-in'; shpTctx.fillStyle=col; shpTctx.fillRect(0,0,dw,dh); shpTctx.globalCompositeOperation='source-over';
+  ctx.drawImage(shpTile,x-dw/2,y-dh/2);
+}
+function shpPortal(ctx,c,shp,x,y,r,hm,seg,t){
+  const S=params.shapes, gmag=(12+130*hm)*(0.5+c.jit);
+  const a1=hash(Math.floor(seg)*3.1+c.x*0.11+c.y*0.07)*6.2832, a2=hash((seg+1)*3.1+c.x*0.11+c.y*0.07)*6.2832;
+  const fr=(t*22)%1, ang=a1*(1-fr)+a2*fr, dx=Math.cos(ang)*gmag, dy=Math.sin(ang)*gmag, split=4+14*hm;
+  if(GEO.has(shp) || !MASK[shp]){
+    ctx.save(); shpGeom(ctx,shp,x,y,r); ctx.clip();
+    ctx.drawImage(srcCanvas,dx,dy);
+    ctx.globalCompositeOperation='screen';ctx.globalAlpha=0.6;
+    ctx.filter='hue-rotate(320deg)';ctx.drawImage(srcCanvas,dx+split,dy);
+    ctx.filter='hue-rotate(180deg)';ctx.drawImage(srcCanvas,dx-split,dy);
+    ctx.filter='none';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    ctx.restore();
+  } else {
+    const im=MASK[shp], ar=SHAPE_AR[shp]||1; let dh=r*2,dw=dh*ar;
+    if(!shpTile){shpTile=document.createElement('canvas');shpTctx=shpTile.getContext('2d');}
+    shpTile.width=Math.max(1,Math.ceil(dw));shpTile.height=Math.max(1,Math.ceil(dh)); const tc=shpTctx;
+    tc.clearRect(0,0,dw,dh); tc.globalCompositeOperation='source-over';tc.globalAlpha=1;tc.filter='none';
+    const ox=dw/2-(x+dx), oy=dh/2-(y+dy);
+    tc.drawImage(srcCanvas,ox,oy);
+    tc.globalCompositeOperation='screen';tc.globalAlpha=0.6;
+    tc.filter='hue-rotate(320deg)';tc.drawImage(srcCanvas,ox+split,oy);
+    tc.filter='hue-rotate(180deg)';tc.drawImage(srcCanvas,ox-split,oy);
+    tc.filter='none';tc.globalAlpha=1;
+    tc.globalCompositeOperation='destination-in';tc.drawImage(im,0,0,dw,dh);
+    tc.globalCompositeOperation='source-over';
+    ctx.drawImage(shpTile,0,0,dw,dh,x-dw/2,y-dh/2,dw,dh);
+  }
+}
+function renderShapes(t){
+  const S=params.shapes;
+  shpBG();
+  const hm=shpHump(t), seg=Math.floor(t*22), now=nowMs()/1000;
+  pctx.imageSmoothingEnabled=true;
+  for(const c of shpCells){
+    let bloom=sstep((t-c.delay*0.30)/0.24), x=c.x, y=c.y, sc=bloom;
+    if(S.motion==='gentle'){ sc=bloom*(0.9+0.12*Math.sin(now*1.3+c.jit*6.28)); x+=Math.sin(now*0.8+c.jit*6.28)*4; }
+    else if(S.motion==='rain'){ const fall=((now*0.15*(0.9+c.jit*0.5)+c.delay)%1); y=(c.y+fall*H)%(H+S.spacing); sc=sstep(Math.min(1,(1-Math.abs(fall-0.5)*1.3)))+0.15; }
+    else if(S.swim){ const dm=hm*S.spacing*1.4; x+=Math.cos(c.dir)*dm; y+=Math.sin(c.dir)*dm*0.7; }
+    if(sc<=0.03) continue;
+    const r=S.spacing*(S.style==='portal'?0.72:0.62)*sc;
+    const shp = S.shape==='mix' ? MIXSET[(c.mix|0)%MIXSET.length] : S.shape;
+    if(S.style==='bloom'){ const col=(S.colorMode==='palette')?shpPalColor(c.lum,S.palette):c.col; shpDrawSolid(pctx,shp,x,y,r,col); }
+    else shpPortal(pctx,c,shp,x,y,r,hm,seg,t);
+  }
+  if(S.style==='portal' && S.dark){ pctx.globalCompositeOperation='multiply';pctx.globalAlpha=0.55*hm;pctx.fillStyle='#4a1f6e';pctx.fillRect(0,0,W,H);pctx.globalAlpha=1;pctx.globalCompositeOperation='source-over'; }
+}
+function shpLoopT(){ return params.shapes.motion==='arc' ? (nowMs()/9000)%1 : 1; }
 function loop(){
+  if(exporting){ raf=requestAnimationFrame(loop); return; }
+  if(params.mode!=='mosh'){ if(srcCanvas){ if(srcAnimated||srcAnimatedB||srcMediaB){updateSrc(); shpKey='';} shpBuild(); renderShapes(shpLoopT()); } raf=requestAnimationFrame(loop); return; }
   beatMul=computeBeat();                       // glitch intensity pulses with the beat
   applyVariety();                              // live modulation (drift/pulse/wind/bursts) — no two runs alike
   if(params.auto.on){ if(!autoBase)autoBase=performance.now();
     const period=(recorder?recDurSec:8)*1000/(params.auto.speed||1);
     applyAuto(params.auto.mode, ((performance.now()-autoBase)%period)/period); }
   if(srcAnimated||srcAnimatedB||srcMediaB || (params.vary&&params.vary.on&&params.vary.cam)) updateSrc();   // refresh source (video/gif frame, A↔B swap, or drift-cam)
-  if(params.vary&&params.vary.on&&params.vary.cam&&params.where==='split'){ const T=performance.now()/1000, ph=noiseSeed*0.001, a=params.vary.amt;
+  if(params.vary&&params.vary.on&&params.vary.cam&&params.where==='split'){ const T=nowMs()/1000, ph=noiseSeed*0.001, a=params.vary.amt;
     splitX=0.5+0.3*a*Math.sin(T*6.2832/11+ph); splitY=0.5+0.3*a*Math.sin(T*6.2832/14+ph*1.4); params.shapeRot=40*a*Math.sin(T*6.2832/9+ph*0.7); maskDirty=true; }   // drift-cam: wander the split + rotate the shape
   if(introHold>0){                             // show the clean image briefly so you see your "before"
     introHold--; if(A&&srcCanvas) A.getContext('2d').drawImage(srcCanvas,0,0);
@@ -871,7 +1031,9 @@ $('#shapeChan').addEventListener('input',e=>{ params.shapeChan=parseInt(e.target
 $('#svgFile').onchange=e=>{ const file=e.target.files[0]; if(!file)return; const rd=new FileReader();
   rd.onload=()=>{ const im=new Image(); im.onload=()=>{ MASK['user']=im; SHAPE_AR['user']=(im.naturalWidth/im.naturalHeight)||1;
       if(![...$('#shapeSel').options].some(o=>o.value==='user')){ const opt=document.createElement('option'); opt.value='user'; opt.textContent='★ your SVG'; $('#shapeSel').appendChild(opt); }
-      $('#shapeSel').value='user'; params.shape='user'; maskDirty=true; updateShapeCtls(); buildSectionPickers(); };
+      $('#shapeSel').value='user'; params.shape='user'; maskDirty=true; updateShapeCtls(); buildSectionPickers();
+        if(![...$('#sShape').options].some(o=>o.value==='user')){ const o2=document.createElement('option'); o2.value='user'; o2.textContent='★ your SVG'; $('#sShape').appendChild(o2); }
+        if(window.__svgForShapes){ $('#sShape').value='user'; params.shapes.shape='user'; shpKey=''; window.__svgForShapes=false; } };
     im.onerror=()=>alert("Couldn't read that SVG — try a plain exported SVG ♡"); im.src=rd.result; };
   rd.readAsDataURL(file); };
 
@@ -1004,9 +1166,48 @@ function resyncUI(){
   $('#bpm').value=react.bpm; $('#vBpm').textContent=react.bpm; $('#react').value=react.strength; $('#vReact').textContent=react.strength;
   if(params.auto){ $('#autoMoveBtn').textContent='auto-move: '+(params.auto.on?'on':'off'); $('#autoMode').value=params.auto.mode; $('#autoSpeed').value=params.auto.speed; $('#vAutoSpeed').textContent=params.auto.speed; autoBase=performance.now(); }
   if(params.vary) syncVaryUI();
+  if(params.mode) setMode(params.mode); syncShapesUI();
   updateStopCount();
   buildSectionPickers();
 }
+$('#festBtn').onclick=function(){
+  if(!srcCanvas){ alert('Load something first ♡'); return; }
+  const EW=1080, EH=1920, FPS=25, TOTAL=250;
+  const ec=document.createElement('canvas'); ec.width=EW; ec.height=EH; const ex=ec.getContext('2d'); ex.imageSmoothingEnabled=false;
+  let mime='video/mp4;codecs=avc1.42E01E'; if(!MediaRecorder.isTypeSupported(mime))mime='video/webm;codecs=vp9'; if(!MediaRecorder.isTypeSupported(mime))mime='video/webm';
+  let rec; try{ rec=new MediaRecorder(ec.captureStream(FPS),{mimeType:mime,videoBitsPerSecond:24_000_000}); }
+  catch(err){ alert('Recording not available in this browser — open in Chrome ♡'); return; }
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size)chunks.push(e.data); };
+  const btn=this, hint=$('#festHint'), old=btn.textContent;
+  rec.onstop=()=>{ const mp4=mime.includes('mp4'); const blob=new Blob(chunks,{type:mp4?'video/mp4':'video/webm'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='precious_fm_festival_9x16.'+(mp4?'mp4':'webm'); a.click();
+    endExport(); btn.textContent=old; btn.disabled=false; hint.textContent=(blob.size/1048576).toFixed(1)+' MB saved. '+(mp4?'MP4 ready to submit.':'Saved as .webm — convert to MP4 for the festival.'); };
+  btn.disabled=true; beginExport(true); rec.start();
+  let i=0;
+  const tick=()=>{
+    renderExportFrame(i,TOTAL);
+    ex.drawImage(preview,0,0,W,H,0,0,EW,EH);
+    i++; btn.textContent='🎬 rendering '+Math.round(i/TOTAL*100)+'%';
+    if(i<TOTAL) setTimeout(tick, 1000/FPS); else setTimeout(()=>rec.stop(), 1000/FPS);
+  };
+  tick();
+};
+// ---------- shapes-mode wiring ----------
+function setMode(m){ params.mode=m; shpKey='';
+  [...$('#modeSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.mode===m));
+  $('#moshStyle').style.display=(m==='mosh')?'block':'none';
+  $('#shapesPanel').style.display=(m==='shapes')?'block':'none'; }
+$('#modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.mode);});
+$('#shapesPanel').addEventListener('click',e=>{const b=e.target.closest('[data-sstyle]');if(b){params.shapes.style=b.dataset.sstyle;[...b.parentNode.children].forEach(x=>x.classList.toggle('on',x===b));shpKey='';}});
+$('#sShape').onchange=e=>{ if(e.target.value==='__upload'){ window.__svgForShapes=true; $('#svgFile').click(); e.target.value=params.shapes.shape; return; } params.shapes.shape=e.target.value; shpKey=''; };
+$('#sSize').addEventListener('input',e=>{ params.shapes.spacing=parseInt(e.target.value); $('#vSsize').textContent=e.target.value; shpKey=''; });
+$('#sMotion').onchange=e=>{ params.shapes.motion=e.target.value; shpKey=''; };
+$('#sSwim').onchange=e=>params.shapes.swim=e.target.checked;
+$('#sDark').onchange=e=>params.shapes.dark=e.target.checked;
+$('#sColorMode').onchange=e=>params.shapes.colorMode=e.target.value;
+$('#sPalette').onchange=e=>params.shapes.palette=e.target.value;
+$('#sBg').onchange=e=>params.shapes.bg=e.target.value;
+$('#sRand').onclick=()=>shpRandom();
 $('#saveLookBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(collectLook())],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mosh-look.json'; a.click(); };
 $('#loadLookBtn').onclick=()=>$('#lookFile').click();
 $('#lookFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
