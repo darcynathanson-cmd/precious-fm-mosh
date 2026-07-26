@@ -59,7 +59,7 @@
   .pick{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .pick span{font-size:12px;font-weight:700;min-width:78px;opacity:.7}
   .pick select{flex:1;border:2px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-weight:600;color:var(--ink)}
-  #shapeSel,#fontSel,#textInput{width:100%;border:2px solid var(--line);border-radius:9px;padding:8px 10px;font-weight:600;color:var(--ink)}
+  #shapeSel{width:100%;border:2px solid var(--line);border-radius:9px;padding:8px 10px;font-weight:600;color:var(--ink)}
   #textInput{font-weight:800;letter-spacing:.5px;resize:vertical;font-family:inherit}
   .exportbar{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);margin:12px -18px -18px;padding:14px 18px 16px;border-radius:0 0 22px 22px}
   @media(min-width:861px){
@@ -122,17 +122,36 @@
 
         <div id="shapeRow" class="sub" style="display:none">
           <select id="shapeSel">
-            <option value="cross">shape: cross ⊞</option>
-            <option value="x">shape: X ✕</option>
-            <option value="circle">shape: circle ◉</option>
-            <option value="wedges">shape: wedges ✳</option>
+            <optgroup label="geometry">
+              <option value="cross">cross ⊞</option>
+              <option value="x">X ✕</option>
+              <option value="circle">circle ◉</option>
+              <option value="wedges">wedges ✳</option>
+            </optgroup>
+            <optgroup label="Precious FM shapes">
+              <option value="hibiscus">✿ hibiscus</option>
+              <option value="wordmark">PRECIOUS wordmark</option>
+              <option value="palm">palm badge</option>
+              <option value="bloom">bloom badge</option>
+              <option value="technogirl">techno girl text</option>
+              <option value="script">Precious script</option>
+              <option value="bunny">bunny in cup</option>
+              <option value="apple">apple</option>
+              <option value="gothic">Precious FM gothic</option>
+            </optgroup>
+            <option value="__upload">＋ upload your own SVG…</option>
           </select>
         </div>
 
         <div id="sectionPickers" class="sub" style="display:none"></div>
 
         <div id="splitTools" class="sub" style="display:none">
-          <div class="hint"><b>Tip:</b> set each part's effect above (try <b>clean</b> = untouched photo, so text/shapes read as a crisp window). You can also <b>drag on the image</b> to move the split.</div>
+          <div class="hint"><b>Tip:</b> pick each part's effect above. Try <b>clean</b> = untouched photo (a crisp window), a wild preset to <b>break the pattern</b>, or <b>channel</b> = RGB channel-break inside the shape. <b>Drag on the image</b> to move / resize the shape.</div>
+          <div id="shapeCtls" style="display:none">
+            <div class="ctl" style="margin-top:8px"><label>Shape size <b id="vShapeSize">32</b></label><input type="range" id="shapeSize" min="8" max="85" step="1" value="32"></div>
+            <div class="ctl"><label>Rotate <b id="vShapeRot">0</b></label><input type="range" id="shapeRot" min="-180" max="180" step="2" value="0"></div>
+            <div class="ctl"><label title="Chromatic split for any region set to 'channel'">Channel break <b id="vShapeChan">50</b></label><input type="range" id="shapeChan" min="0" max="100" step="2" value="50"></div>
+          </div>
           <div class="row" style="margin-top:8px"><button class="mini" id="shuffleBtn">🎲 shuffle</button><button class="mini" id="centerBtn">re-center</button></div>
         </div>
       </div>
@@ -182,12 +201,6 @@
           <div class="ctl"><label title="How much smaller each nested copy is">Shrink <b id="vSscale">50</b></label><input type="range" id="sscale" min="30" max="72" step="1" value="50"></div>
           <div class="ctl"><label title="0 = still · higher = the classic never-ending zoom into itself">Infinite zoom <b id="vSzoom">0</b></label><input type="range" id="szoom" min="0" max="10" step="1" value="0"></div>
           <div class="hint">Nests the image inside itself toward the centre — like a photo of a photo of a photo. Turn <b>infinite zoom</b> up and record for the endless-zoom loop.</div>
-        </details>
-        <details>
-          <summary>vignette + channels</summary>
-          <div class="ctl" style="margin-top:8px"><label title="Darken toward the edges (oval frame)">Vignette <b id="vVamt">0</b></label><input type="range" id="vamt" min="0" max="100" step="5" value="0"></div>
-          <div class="ctl"><label title="Split into red / green / blue toward the edges — centre stays clean">Channel split <b id="vVsplit">0</b></label><input type="range" id="vsplit" min="0" max="100" step="5" value="0"></div>
-          <div class="hint">An auto oval vignette. Turn up <b>channel split</b> and the edges peel into red / green / blue while the centre stays true — each ring reads as a different channel. Stacks beautifully with <b>stack ↻</b> (every nested copy gets its own vignette).</div>
         </details>
         <details>
           <summary>auto-move ✨ (record a journey)</summary>
@@ -271,6 +284,7 @@
 <input type="file" id="fileB" accept="image/*,video/*" style="display:none">
 <input type="file" id="audioFile" accept="audio/*" style="display:none">
 <input type="file" id="lookFile" accept="application/json,.json" style="display:none">
+<input type="file" id="svgFile" accept=".svg,image/svg+xml" style="display:none">
 <script>
 const $ = s=>document.querySelector(s);
 const preview = $('#preview'), pctx = preview.getContext('2d');
@@ -293,20 +307,31 @@ function updateSrc(){ if(!srcCanvas)return;
   if(autoAB && srcMediaB){ if(++abTick % 75 === 0) activeClip=1-activeClip; }  // auto A↔B mosh transition (~2.5s)
 }
 let params={preset:'blend',power:1.7,smear:6,block:16,rec:7,speed:1.0,ratio:'4:5',crazy:true,
-  where:'whole', shape:'cross', radius:0.32, text:'PRECIOUS', fontFamily:'Arial Black', letterSpacing:0, sections:['melt','streak','chaos','blend'],
+  where:'whole', shape:'cross', radius:0.32, shapeRot:0, shapeChan:0.5, sections:['melt','streak','chaos','blend'],
   fx:{hue:0,sat:100,contrast:100,invert:0},
   glitch:{sort:0, sortThresh:120, chDelay:0, trails:0, sortDir:'h', sortMode:'bright', timewarp:0},
   cvi:{pixel:0, poster:0, colorize:0, palette:'neon', cycle:0, mirror:'off'},
   stack:{depth:0, scale:0.5, zoom:0},
-  vig:{amount:0, split:0},
   auto:{on:false, mode:'journey', speed:1},
   vary:{on:false, amt:0.6, wander:true, pulse:true, wind:true, bursts:true, cam:true, reseedRec:true}};
 let splitX=0.5, splitY=0.5, dragMode=null;
 const OPTS=['blend','melt','streak','chaos','random'];              // whole-image looks
-const SOPTS=['clean','blend','melt','streak','chaos','random'];     // section options (adds 'clean' = untouched photo)
-const TINT={blend:'#7c5cff',melt:'#ff5db1',streak:'#22b0ff',chaos:'#ffb020',random:'#33cc88',clean:'#5bd6a8'};
-// mask shapes (inside = section 0, outside = section 1). 'text' = a typed word.
-const MASK={};   // (typed-word masks removed)
+const SOPTS=['clean','blend','melt','streak','chaos','random','channel']; // section options ('clean' = untouched photo, 'channel' = RGB channel-break)
+const TINT={blend:'#7c5cff',melt:'#ff5db1',streak:'#22b0ff',chaos:'#ffb020',random:'#33cc88',clean:'#5bd6a8',channel:'#ff3860'};
+const SHAPES=[
+  {k:'hibiscus',n:'hibiscus',ar:1.0656,uri:'data:image/png;base64,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'},
+  {k:'wordmark',n:'PRECIOUS',ar:1.7687,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAACTAQAAAABAZ1roAAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAKSSURBVFjD7Zg7jtswEEBHYKEuukAQHWKbdLxWOilwkXKP4KsoUJFrENgLMB0FEGSG+tD8ibQcxXCRBWxopGd6NPOsJQmV1gO0WgAeCKCaw9c5/ALwDUPdQ4MX8KLuW60lwQNQYELaV9KcNx9fLgzIqxoPvus57AYyhwy2CwxfCgfUo/4xhwPRzUx0+G6OOL40Dqg/ZuK3ZvVy3nynfp9PWcKEwhDtA4RyiWEhWEiQPCFbVa3EtH3L4BGileDnAfh3IwRASKiYENC5ecjUGB4hksToZJok6GWfMPeCNSF+TfugHvhG/IoNcdUvhaobP5Y8koTT26nY/TJxwA++58eUJiSN/eB7fqSJPvIjIBLdV2/7xLT6kSJ8PzqXkDPR+n5QXvSDF/3ge35MGWI8rftn+LEzhqKOHx5xtYTjB29ShOsYFrjg6Zp45l5KxOQT1yLhjTHmCO+3v0+QInG5O49n+PEw8XQ/chWLCVHjqV9ZgmAefY7g2EycLhz2I0eQvxvjVfx4wefHMT/uIq7Hxvjvx7P9cMeQ9OTuHyDoqX78y/8v9FQ/zli/vMrz4/DsokxseZT98OaFD/rhzU+ThJnjytwTRkbz5CTRjUUi130ZzfmThNv9xhKNvZcS4a1v0Y96I9RGeGtkLI4dQziE54cl2EbszE9xUdJgQ3PzD0NAdv6BhIIu8MPNgwXEJUeEftQREfpBAkJG62xcZNOY6MZb9x1CboS/I4BEdzfhfIv7hDGL/fBefD8Aqqhi1g/h+GHzCPyQrVtT6VT9I1f1HT/uJrhP2JDZPHi3Kv1z2ZfawgG6AaDGhjFq97bmTS8MpSF6oD0AEdAy03lzbd0fw5CbDwB8wtJWDOrbHtvnbcutJybRPzbssNHan/giAAAAAElFTkSuQmCC'},
+  {k:'palm',n:'palm badge',ar:1.4607,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAACyAQAAAACMl4x7AAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAHkSURBVFjD7ddBkoMgEAVQLRYsOYJHYW6GR+MoHMGlC0smJjEi0P27RirJYli/Ct2/FUnXnZaJU5w6brl4WxxQG4iBBtbcxQJ+4bZ+KGF2EUdqk5eYCfECcQVlkNsMiQhgE6KQdJN6JCYV1eTtSXhQRnWb/iwq/apMlP3qTEyglVohNhNFv3mhZam6EB6UUTZTlFE04wqRjbcsNG9XlSJrV1fEuZmhIs6l2oo4l+oq4lRqpZWsVFUV6WQ0FKYq0naHqghQpIHYqkgDcX8UaWQRiXqkaaiaEEdkhhBHZAMhAhRHZJYQM4gjbZcAycELBRXYEZkixSgWmhR7qAaKgRQBij12C4UjxSwW8YJY0FjkQn1arF9Sx7eIWSr6K2KSCuYpDGLhSLG/t5YUIxQe7hKkibV4kjUUAy2e7VpGeNDs3i4DHsPtOTGDZp+BYKE5sfKn+rZkYmDF2EhYVniRcKwIYHD30fW8mMFY7oPRvFhR6FvsSIwgUonwIFKJCCD0NmICg/sXnxIOiPc8H+8S9rJo8c75Bu/+2OAMkpx06qpYJGcyPtcF3wbLCt/oO2dY0eqb3ULg2wUW6ppYZHcpLPCNTXDrs5fE425pGDEK77j4Js20i/9n73d+utSuA9uElyBG8xjKL+lA8FUjOXkOAAAAAElFTkSuQmCC'},
+  {k:'bloom',n:'bloom',ar:1.1765,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAADdAQAAAAB1NTH0AAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAJXSURBVFjD3dZNjuMgEAVgW154yRE4CkcDaQ4yV+Eo3s2WXbNwU+3Exj+h4NkZZHW3paiR8nWoeoRA08RHu6b4dEShLAQRmaLQkxiKYgJULKR9iBEUCkp9FEp0Vgi2KfkUZmmLK1k9hV2K5krWm+j5gnZCxkEa2BKq4tPdCc2m227iOfQ54eJoLIie+Pw3MQdDOeFj22nuHcXp50EayCJCHKSBxDeWQhmx1EFG0Foz/xlG0lozL+zSbBrZOn0UISfcEkcaSBQ+gqSZVLw2E5v8XIXPiO0ZoaAawkBhoXgJpE+FqyD8VdGlYrwq2lSEq6LBQkOh4OLKd5b/soB1MHm8iB4KAYWCQkPBgGPqLRRdBcHFcayUi+O4cVlhwbfjZeOywkFx2HTcshy3FCsCFIdmNCscFCMUhIWFYoDCQeGhGKEIUBAWpoKwFcRwi3AXhKogatSBBf0e0VYQ2VmGHyPsLaLG3r8iVAUhKwgBRQ9FB0VbQeRC3QkFRSaQDeTa3YkWiu7NWcIlIVixP/hlBcFn6qFwO6HfFMNO8JFaKAwUDRIBin1g/NfDQWGhaKAYZJxHUPbxxe20zdQVwLw0oiR8Yb/tUlMlQflVi48pHINrsF1ZDFC4/O/g1q4oixHEcUYEFNgjMiw0EKaCsGDh6ojhmwj3q4S+RagKQt4yCxY18vgugv5bDHCWGsLeIgxcfSzO/CbLMghnTg8BBT7FgHBnTlN8IuNTHSwMvDuM8P7hC/f9tRXQrsnepT7mP2G9aP9L/nd6/d2uhhNdPscr+kOhmwoU02ue5As82E22Qfm9tQAAAABJRU5ErkJggg=='},
+  {k:'technogirl',n:'techno girl',ar:2.3636,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAABuAQAAAADpa1AvAAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAR/SURBVEjH1dexbuM2GAdwEipOHQ5mxw6GOfQFboxRJeyj5BFudHDXUIaHbM0LHOzn6BS5HoJOfoEixyCDxzDIcDqE4dc/KclRHFleulRAAkX6hfq+jx8pm7HW8Y4dOmR+UBSHhDoszH8gDj7lcKQiZ7pI+w0nK9xPPcCk5KTTdi/QRpCHKPcKPKJXCAhJJPAU7rtHMBCWZhAJ5d1pkFVGz5ywKd10iJRKiAIiRTjUFQbhVq+QUeQqPEV+C6H6DlFCrIK49SGwnXDVXUsYiITMq/uFWpWVKCHs5xD6q+qTUVOblBFCOIh7atc2oVLnv0UxgxD0M8J4bAvMqc5ZEHpWSkxgsStEEAOIUFNpEoTA6a4tUACdq8TJB0q8MmcIgdPTK7H0IYTnBVFCZGID6Od2LmoaBa3JQzg0Gq61asqtuiCIBV2Tg/A+3RGpU1eEIK9oRSUnkARC+9FLJk6hg0u6ogJJ0D2hjSC+yJc4vYoNqChXOVOXGAWRUmsNBjFDT8g6+N8b0STDF155cUF+0Fy4jxVjqilI+tUrK5FGaxIgPBPNGMKfKyOXrcnmaA2ItLmifaaMKmgbFy5hGh1myzSCSatb9+Pxi0Nj1oEQRPlmDWFqZBMaxkCquwL/r1oifbtAoqinZuzRhb5D6GW8yjFXSO/NjoCRKfenoTo4C72+KxRBxKFFOGNqFyC0MfEYnqRc56zjIO15TFFRoddd4kSHjiyCMKpzy3mvQ0eaIGy3QFVTrAyWaI326hQKSx1NlaJBZVNQHiXHT0heOIE1zKQTLgodtow4wcKcRoEliH2CKZc6HSYoJFYJWZoouNNGGoYlhJMwxlaoWqCjjYrCx4qFR1Ui+1A9hY2pwIIgz70Of4a7lZjUkWLGC12JrBJZsroZ2iEr2V9ZFDxOyCeqt3leUPpIstTMso2rRYHgOE1rsaTLJ1qgYQ3b+KoZ9DLUgVauFpvFJ1r8SdONa4T828csa7Faz5O7xfhueU+beSXEohJlLSgLYrWk5837SqTKxW5rhEcyc4j18YbVTRmFrNcrX5VHlTBnL6KMfVrUIhRkfryamu9bIaOo1xVf3d38CrGZPj5shQiRpvU7GvX4+rS6ybAEbrciCfVI/FFT08vH2T9DQp22Ir6nku3ec5Iu+ZdhhrVzzYr62nks/svu9PYYhl+9Ih5UHhI9HyaaMYoDgNOhIZLW7iMn6Ty5z3fHaKWinKD0zVN5KxXlZYfYFrgWF72R7xnjlRAHBDYC6v4MtBXYdfrrIyzeGb5PJIZb9rlPYJc6ZUfsf3KYNB+wD30J40OOyid77w/xQlKWCtsjhFffadkrBpOz2zuzV5ywHwYfs+l13nUT3ahz9MbIZkm3wKzSFOLEZum6c6GGt2qO7nE2E5edHSBG7CEf4mE2U6JbfMaGPkSL2OxciE5RYjsZsbSwWTnoFnhfQQhmj+2g8ysKvryIPIiPY7NnjHcsCWIyObvfE4dn34Lw6oHW8+56jOmPURbFpjPbxE1oNIQQRfPK2T1Oj7LBj8Pq3L5c/heeABjtwShk+AAAAABJRU5ErkJggg=='},
+  {k:'script',n:'script',ar:1.8571,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAACMAQAAAACy5+qmAAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAIDSURBVFjD1dhRboQgEAZgiA+81SN4FI8Gb70WSS/iEWzSBx6I03VRRGXmd1vTpLzsRj/dmWFBRCm2UVByM0RAdESDLCzRKAsiiiLQDyEH0szCgVSIvCTaWQxQiMl0swg3iAiFWJCeULpJBCgiFISFg2JA2Up1X+7BJ6MJCbMIPt0lDJpQGEJBCAmdBVeyBgqThWdE+4IYQDl40b8gRkbYGwT9hdD/Rmx/IK5fbhb+dNJ4JGzcC1fJc5/t+rN5eJrnVZtYTtgt5Pb5dRNxvS7PE92ziptIx/tiFrDp4L4cuow5Yb0Xpsh7ebodStoVfZgK8X4QZUhFqTbRHNM6ibYsTVV0pWhrwpYdYGui7MRToEcxtTWRy+fPQaRCNpu2SGiqi1yBL4NEvTlVDe8locq59WdiuiR6UUQowiVhRTFCMUDhy/HHFUwWExQBigEKh0RUvxfhorCCGG8QQ54queahcOskzLY8kQMhjNvp9MA6tghFgGKEcXgoHBQKxRGhCFAMUCggTF6H6zooVuGMGGXxEd6KxUItDqeULA7r/IoYgYjdHpx77nCHVXxuwteF77k7LGLKw8YzYszDRjHCp4/YRV5oJohVuDQXuapY39p7UsybWbPEZ9g3t4bJYC8mUehLQt6jwLsYswAbLhbulfRwv6UD2xzP6dLJAu/7aJTsI1Q50G/KQNggJHB2RwAAAABJRU5ErkJggg=='},
+  {k:'bunny',n:'bunny',ar:0.7115,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALkAAAEEAQAAAABc9ajuAAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAOgSURBVFjDtdk9b9NAGAfwC0UECYiLGBhakUoMrGwEUcmV+kWydSSdGWw2horCJygfJQKJMiBmJupSiW6tg5DqqtYdts/3fv/k3MAtlu6nx/c89xI7CSFV65Xj+kIGq8Rsu+WkvvTfblowKycph7HRfzths6y6bjMeKdsmY2xajXTKWG5AXMHHCqrLLNVhWPWcVtfqcjnV+lfqCEbIKuO3lK3PODyvL6kNlA/F9vRbNRFPOXxzoGhyqCNl2+HQa6DUIGkg54E6MA48uXLLLJyxKx7BMhvYawTvbWhvwdb4JXWgDVST1Tfhq4QeM5pWiAkURRQSIhNyBCpiaMKVk65oToGipQjQGOViiFHlVoSa3v6yQBcPHgr/MCsFy2f1P9KNOmc1DAS8rzoDHAPuRDpFWUnoLQ2Lj1oUGpEJuImAdAZ4nOHs4ogELJS9TRBcKTBvNSOgjgxBruDIgIkCY9HpGEVM0RgKrDVXZVh1EATvZP8NE9RHuLUZ4NMARqi5WgmE3xIeoDWPAyHgcEaBoE6tuU7agjAAPRYa0blA9gGcArkV7XNzDVhYYDiIbdIPhhKB2D+95aHsPDiEP4vSJcGQI7h+us7SysGTpUGMAWfXgQLBFzHGgQVyXw1DQaYbo9lNENgRGwIeWyAPZ/DDKxUQoToiFHHL7L+UYBVySQAEvGxbC6J9XwoENVf30OzaBcoHiL2CFEWcrbfwxAbxHXbHArY58Z8oRtuvqokjswwAX6u7bj/77Mu2bqe++uSa+CKo9zjXbYSgPm4vfVD4y+Br4oUiBVDXPuwG6Rxg3eA7gtI9tBL8g+dzIEbgH5xdB9zBz1mz6i6coTrKpIHEncAaUw80v0SkIKKCyIFsCCAfNoN7IhKwHhkDQPjgHogbeOimy7Nyj8Fx3IzhPO7YJzSJCGiblQvtr1J3HIg5OE81dtAU44G6FeA41xB1A4puRQnYiiWCDMHUN7tthB/yOeA/a2MAlMwD7xid4Rf6RJ4iyBDkIF2agcdBsVXDmgf8r0viFcsD694HfdVWif/JckhAhACzEDo6Ea8sViGjmQAz4mIkX8kSA36iF5ZMwTN3Yn35FggmCozS6QYCot3KKEQDs3Qd9IgLHfQKMx1eILjvL9xcdQO00tu/AwQcKSBG2/cWbuzrHyao0vdMGMjaUxPUpEwteNX2n9gwaeHY6ie9c77euQMnfHdmNpDt/c3Z4aOR01//9bF7OCCeNqjgjd7xF2dmaBKYM+hjAAAAAElFTkSuQmCC'},
+  {k:'apple',n:'apple',ar:0.9462,uri:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPYAAAEEAQAAAAAzRPTDAAAAAnRSTlMAAHaTzTgAAAACYktHRAAB3YoTpAAAAAd0SU1FB+oHGgAjBThMekEAAAJ8SURBVGje7dnNsaMwEARgKA4cCYFQCE0KTRlsCoSgIwfKLDYG9DPTTa2K5WId31cGTct+SENVRaNfxgqNZZkRN8uyIG9Xt8C71R3wfnU0wWF1D9ysPsHycIHE67e/7vN3vCjg/+XGQjfaNTZv1UXafFBD2PwzLPFRzXcbU+OhyzlE7oiPxIUJmNAn4jPxV6EvpW4fdvewP11/4fqVfn/Y95N9v5l74iNxV+iWeEz1O6/Qk/g+gYUex9d9Kgp9Sj++fiT0KJ52yUZU3pC7zS4fj5Ab4p3gDt8+mr/AYT615EG+reRBgb3oDk4vnKARfYLTCybYyL7g6Z8FdIo7WN75AzGK7wUqvK9ArfkLl7cX2P6zW1j+HkCv+ghW9wzAqD7BeLjPML5vgHp8W0DMW+AWxsfdwXi3gJkPwP0FN8CnCw74s0DEa+Qv7mj53gtY6i10W+wddFfsPfTxdh+g+9vdFPn0uC9FPv/85z9Xx/O/b+YD9Pv/fzLvod/9fCl/PjK/+/lfuj8p3T8xL93fFe8vB+BX9rc98Cv76w64u+Ds/MC89PzCzkfsfEXdqD5d8kF1f+n8ybxT3V1ydn5m53Pm7PzP+gfUjeJ7g2VQ3F/0XvG9P6IFvPdXWH+GOev/sP6REuBM/GwgGuJygP5wOcDxcDlAdzjrz8kBVdiD/h/rD7L+ohhQ2H+VAvKBSwGNgUsBucClgGzgrP8qBBC3n/MC4/ZyXqCPPC9wjDwv0EWeF2gjzwpIXz6g1ZMKTF8upAWMiacFuMTTFajSgaeXTjB/9/Gd4B/59scEGuX2+xuCSrn9d4m/+1UveLtdt8kX56zAb9eRX7E3x/M++ONfazFnWPNSskcAAAAASUVORK5CYII='},
+  {k:'gothic',n:'gothic FM',ar:1.4857,uri:'data:image/png;base64,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'},
+];
+// mask shapes: key -> loaded silhouette <img> (a 2-region inside/outside mask). Baked SVGs + user uploads.
+const MASK={}, SHAPE_AR={};
+SHAPES.forEach(sp=>{ SHAPE_AR[sp.k]=sp.ar; const im=new Image(); im.onload=()=>{ MASK[sp.k]=im; if(params.shape===sp.k){maskDirty=true;} }; im.src=sp.uri; });
 const SIZED=s=> s==='circle'||MASK[s];
 let maskCv=null, maskCtx=null, maskFlags=null, maskDirty=true;
 // beat sync
@@ -323,29 +348,19 @@ function computeBeat(){
   const period=60/react.bpm*1000, ph=(performance.now()%period)/period;
   return 1 + Math.pow(1-ph,2.5)*1.4*react.strength;
 }
-function textLines(){ return (params.text||'MOSH').split('\n').map(l=>l.length?l:' '); }
-function applyTextFont(c){                    // multi-line, auto-fit width & height, with letter-spacing
-  const lines=textLines();
-  const fam=`"${params.fontFamily}",Helvetica,Arial,sans-serif`;
-  let fs=Math.max(14, params.radius*Math.min(W,H)*2.0);
-  const setF=()=>{ c.font=`800 ${fs}px ${fam}`; if('letterSpacing' in c) c.letterSpacing=(params.letterSpacing||0)+'px'; };
-  setF();
-  const wmax=Math.max(1,...lines.map(l=>c.measureText(l).width));
-  const totalH=lines.length*fs*1.06;
-  const sc=Math.min(W*0.92/wmax, H*0.92/totalH, 6);
-  if(sc<1 || (lines.length>1 && sc>0)) fs*=sc;
-  setF();
-  c.textAlign='center'; c.textBaseline='middle';
-  return {lines, lh:fs*1.06};
+function shapeDims(){                          // pixel size of the current shape (radius = half the larger side)
+  const ar=SHAPE_AR[params.shape]||1, S=Math.max(24, params.radius*Math.min(W,H)*2);
+  return ar>=1 ? {dw:S, dh:S/ar} : {dw:S*ar, dh:S};
 }
-function drawTextAt(c,X,Y,fn){ const {lines,lh}=applyTextFont(c); const y0=Y-(lines.length-1)*lh/2; lines.forEach((l,i)=>fn(l,X,y0+i*lh)); }
-function rebuildMask(){
-  if(!MASK[params.shape]||!W)return;
+function rebuildMask(){                        // rasterise the SVG silhouette into maskFlags (inside=1)
+  const im=MASK[params.shape]; if(!im||!W)return;
   if(!maskCv||maskCv.width!==W||maskCv.height!==H){maskCv=make(W,H); maskCtx=maskCv.getContext('2d');}
-  maskCtx.clearRect(0,0,W,H); maskCtx.fillStyle='#fff';
-  drawTextAt(maskCtx, splitX*W, splitY*H, (l,x,y)=>maskCtx.fillText(l,x,y));
+  maskCtx.clearRect(0,0,W,H);
+  const {dw,dh}=shapeDims();
+  maskCtx.save(); maskCtx.translate(splitX*W, splitY*H); maskCtx.rotate((params.shapeRot||0)*Math.PI/180);
+  maskCtx.imageSmoothingEnabled=true; maskCtx.drawImage(im, -dw/2, -dh/2, dw, dh); maskCtx.restore();
   const d=maskCtx.getImageData(0,0,W,H).data; maskFlags=new Uint8Array(W*H);
-  for(let i=0;i<W*H;i++) maskFlags[i]=d[i*4+3]>128?1:0;
+  for(let i=0;i<W*H;i++) maskFlags[i]=d[i*4+3]>110?1:0;
   maskDirty=false;
 }
 
@@ -518,26 +533,27 @@ function mirror(ctx,w,h,mode){ const tc=make(w,h),tx=tc.getContext('2d'); tx.dra
   if(mode==='H'||mode==='quad'){ ctx.save(); ctx.translate(w,0); ctx.scale(-1,1); ctx.drawImage(tc,0,0,w/2,h,0,0,w/2,h); ctx.restore(); }
   if(mode==='V'||mode==='quad'){ const t2=make(w,h),t2x=t2.getContext('2d'); t2x.drawImage(ctx.canvas,0,0);
     ctx.save(); ctx.translate(0,h); ctx.scale(1,-1); ctx.drawImage(t2,0,0,w,h/2,0,0,w,h/2); ctx.restore(); } }
-function vignetteChannel(ctx,w,h,amount,split){  // soft OVAL vignette + RGB channel separation toward the edges
+function channelBreak(ctx,w,h,amt){              // localized RGB channel split inside a shape region set to 'channel'
+  if(amt<=0) return;
+  const inCh=params.sections[0]==='channel', outCh=params.sections[1]==='channel'; if(!inCh&&!outCh) return;
   const img=ctx.getImageData(0,0,w,h), d=img.data, src=new Uint8ClampedArray(d);
-  const cx=w/2, cy=h/2, sh=split*0.09*w;
+  const off=Math.max(1,Math.round(amt*0.10*w));   // horizontal chromatic shift
+  const R=params.radius*Math.min(W,H), useMask=!!maskFlags, circ=params.shape==='circle';
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    const i=(y*w+x)*4;
-    const ex=(x-cx)/cx, ey=(y-cy)/cy;            // -1..1 in each axis
-    const de=Math.hypot(ex,ey);                  // elliptical distance: 0 centre · ~1 at edge midpoints · ~1.41 at corners
-    if(sh>0){ const off=Math.round(sh*Math.min(1,de)*Math.min(1,de));
-      const ux=de>0?ex/de:0, uy=de>0?ey/de:0;
-      const rx=Math.min(w-1,Math.max(0,x+Math.round(ux*off))), ry=Math.min(h-1,Math.max(0,y+Math.round(uy*off)));
-      const bx=Math.min(w-1,Math.max(0,x-Math.round(ux*off))), by=Math.min(h-1,Math.max(0,y-Math.round(uy*off)));
-      d[i]=src[(ry*w+rx)*4]; d[i+2]=src[(by*w+bx)*4+2]; }   // R pulled outward, B pulled inward, G stays
-    if(amount>0){ let tt=(de-0.55)/0.7; tt=tt<0?0:tt>1?1:tt; const s=tt*tt*(3-2*tt);   // smooth oval falloff, feathered
-      const v=1-amount*0.85*s; d[i]*=v; d[i+1]*=v; d[i+2]*=v; }   // capped at 0.85 so it never crushes to pure black
+    const mx=Math.min(W-1,Math.round(x/w*W)), my=Math.min(H-1,Math.round(y/h*H));
+    let inside; if(useMask) inside=maskFlags[my*W+mx]===1;
+    else if(circ){ const dxp=mx-splitX*W, dyp=my-splitY*H; inside=Math.hypot(dxp,dyp)<R; } else inside=false;
+    if((inside&&inCh)||(!inside&&outCh)){
+      const i=(y*w+x)*4, rx=Math.min(w-1,Math.max(0,x+off)), bx=Math.min(w-1,Math.max(0,x-off));
+      d[i]=src[(y*w+rx)*4]; d[i+2]=src[(y*w+bx)*4+2];   // R pulled right, B pulled left, G stays
+    }
   }
   ctx.putImageData(img,0,0);
 }
 function renderFx(){                             // returns a canvas to display (A, or a half-res processed copy)
-  const g=params.glitch, vg=params.vig;
-  const active = g.sort||g.chDelay||g.trails||g.timewarp || vg.amount>0 || vg.split>0 || burstSort>0;
+  const g=params.glitch;
+  const chanOn = params.where==='split' && (params.sections[0]==='channel'||params.sections[1]==='channel');
+  const active = g.sort||g.chDelay||g.trails||g.timewarp || burstSort>0 || chanOn;
   if(!active) return A;
   const fw=Math.max(2,Math.round(W*0.5)), fh=Math.max(2,Math.round(H*0.5));
   if(!workCv||workCv.width!==fw||workCv.height!==fh){ workCv=make(fw,fh); workCtx=workCv.getContext('2d'); frameHist=[]; fbCv=null; twHist=[]; }
@@ -546,7 +562,7 @@ function renderFx(){                             // returns a canvas to display 
   const sortAmt=Math.max(g.sort,burstSort); if(sortAmt>0) pixelSort(workCtx, fw, fh, sortAmt, g.sortThresh, g.sortDir||'h', g.sortMode||'bright');
   if(g.trails>0)  trails(workCtx, fw, fh, g.trails);
   timeWarp(workCtx, fw, fh, g.timewarp||0);
-  if(vg.amount>0||vg.split>0) vignetteChannel(workCtx, fw, fh, vg.amount, vg.split);
+  if(chanOn) channelBreak(workCtx, fw, fh, params.shapeChan||0.5);
   return workCv;
 }
 let stackCv=null, stackCtx=null;
@@ -627,7 +643,7 @@ function step(){
   for(let by=0;by<rows;by++)for(let bx=0;bx<cols;bx++){
     const x0=bx*bs,y0=by*bs;
     const pr = split ? params.sections[sectionOf(bx/cols,by/rows)] : params.preset;
-    if(pr==='clean'){ bx2.drawImage(srcCanvas,x0,y0,bs,bs,x0,y0,bs,bs); continue; } // crisp photo, drawn inline
+    if(pr==='clean'||pr==='channel'){ bx2.drawImage(srcCanvas,x0,y0,bs,bs,x0,y0,bs,bs); continue; } // crisp photo (channel-break splits it later)
     const [dx,dy]=motion(pr,bx,by,t);
     const sx=Math.max(0,Math.min(W-bs,x0+Math.round(dx))), sy=Math.max(0,Math.min(H-bs,y0+Math.round(dy)));
     bx2.drawImage(A,sx,sy,bs,bs,x0,y0,bs,bs);
@@ -637,7 +653,7 @@ function step(){
   for(let i=0;i<ntear;i++){
     const bx=Math.floor(hash(seed*13.1+i*7.7)*cols), by=Math.floor(hash(seed*5.3+i*2.1)*rows);
     const pr = split ? params.sections[sectionOf(bx/cols,by/rows)] : params.preset;
-    if(pr==='clean') continue;               // don't tear the frozen sections
+    if(pr==='clean'||pr==='channel') continue;   // don't tear the frozen / channel-break sections
     const tw=bs*(1+Math.floor(hash(seed*2.2+i*1.9)*3)), th=bs*(1+Math.floor(hash(seed*4.6+i*2.7)*3));
     const [vdx,vdy]=motion(pr,bx,by,t); const vl=Math.hypot(vdx,vdy)||1;
     const mag=bs*(2+hash(seed*8.1+i*3.3)*4)*P;
@@ -703,7 +719,7 @@ function loop(){
     applyAuto(params.auto.mode, ((performance.now()-autoBase)%period)/period); }
   if(srcAnimated||srcAnimatedB||srcMediaB || (params.vary&&params.vary.on&&params.vary.cam)) updateSrc();   // refresh source (video/gif frame, A↔B swap, or drift-cam)
   if(params.vary&&params.vary.on&&params.vary.cam&&params.where==='split'){ const T=performance.now()/1000, ph=noiseSeed*0.001, a=params.vary.amt;
-    splitX=0.5+0.3*a*Math.sin(T*6.2832/11+ph); splitY=0.5+0.3*a*Math.sin(T*6.2832/14+ph*1.4); maskDirty=true; }   // drift-cam: wander the section split
+    splitX=0.5+0.3*a*Math.sin(T*6.2832/11+ph); splitY=0.5+0.3*a*Math.sin(T*6.2832/14+ph*1.4); params.shapeRot=40*a*Math.sin(T*6.2832/9+ph*0.7); maskDirty=true; }   // drift-cam: wander the split + rotate the shape
   if(introHold>0){                             // show the clean image briefly so you see your "before"
     introHold--; if(A&&srcCanvas) A.getContext('2d').drawImage(srcCanvas,0,0);
     if(A){ pctx.imageSmoothingEnabled=false; pctx.filter=fxFilter(); pctx.drawImage(A,0,0,W,H); pctx.filter='none'; }
@@ -745,11 +761,10 @@ function drawSplitGuides(){
   pctx.save();
   pctx.strokeStyle='rgba(255,255,255,.95)'; pctx.lineWidth=2.5; pctx.setLineDash([9,7]);
   let entries;
-  if(MASK[sh]){                              // typed word(s)
-    pctx.setLineDash([]);
-    drawTextAt(pctx,X,Y,(l,x,y)=>{ pctx.globalAlpha=0.18; pctx.fillStyle=tint(0); pctx.fillText(l,x,y); pctx.globalAlpha=1;
-      pctx.lineWidth=2; pctx.strokeStyle='rgba(255,255,255,.9)'; pctx.strokeText(l,x,y); });
-    if('letterSpacing' in pctx) pctx.letterSpacing='0px';
+  if(MASK[sh]){                              // SVG silhouette shape
+    const im=MASK[sh], {dw,dh}=shapeDims();
+    pctx.save(); pctx.setLineDash([]); pctx.translate(X,Y); pctx.rotate((params.shapeRot||0)*Math.PI/180);
+    pctx.globalAlpha=0.34; pctx.drawImage(im,-dw/2,-dh/2,dw,dh); pctx.globalAlpha=1; pctx.restore();
     sizeHandle(X+R,Y);
   } else if(sh==='cross'){
     pctx.beginPath();pctx.moveTo(X,0);pctx.lineTo(X,H);pctx.moveTo(0,Y);pctx.lineTo(W,Y);pctx.stroke();
@@ -822,7 +837,7 @@ function buildSectionPickers(){
   if(params.where==='whole'){ box.style.display='none'; return; }
   box.style.display='block';
   const two = params.shape==='circle' || MASK[params.shape];
-  const labels = two ? (MASK[params.shape]?['letters','background']:['inside','outside']) : (SLABEL[params.shape]||['a','b','c','d']);
+  const labels = two ? ['inside','outside'] : (SLABEL[params.shape]||['a','b','c','d']);
   const n = two?2:4;
   for(let i=0;i<n;i++){
     const row=document.createElement('div'); row.className='pick';
@@ -835,16 +850,30 @@ function buildSectionPickers(){
 }
 function setStyleMode(w){
   params.where = (w==='whole')?'whole':'split';
-  if(params.shape==='text') params.shape='cross';
   [...$('#whereSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.w===w));
   $('#wholeBox').style.display = (w==='whole')?'block':'none';
   $('#shapeRow').style.display = (w==='split')?'block':'none';
   $('#splitTools').style.display = (w!=='whole')?'block':'none';
   $('#shapeSel').value = params.shape;
   preview.style.cursor = (w!=='whole')?'pointer':'default';
-  buildSectionPickers();
+  updateShapeCtls(); buildSectionPickers();
 }
-$('#shapeSel').onchange=e=>{ params.shape=e.target.value; buildSectionPickers(); };
+function updateShapeCtls(){ const on = params.where==='split' && (MASK[params.shape]||params.shape==='circle'); const box=$('#shapeCtls'); if(box) box.style.display = on?'block':'none'; }
+$('#shapeSel').onchange=e=>{
+  if(e.target.value==='__upload'){ $('#svgFile').click(); e.target.value=params.shape; return; }
+  params.shape=e.target.value; maskDirty=true; updateShapeCtls(); buildSectionPickers();
+};
+// shape size / rotate / channel-break controls
+$('#shapeSize').addEventListener('input',e=>{ params.radius=parseInt(e.target.value)/100; $('#vShapeSize').textContent=e.target.value; maskDirty=true; });
+$('#shapeRot').addEventListener('input',e=>{ params.shapeRot=parseInt(e.target.value); $('#vShapeRot').textContent=e.target.value; maskDirty=true; });
+$('#shapeChan').addEventListener('input',e=>{ params.shapeChan=parseInt(e.target.value)/100; $('#vShapeChan').textContent=e.target.value; });
+// upload your own SVG as a shape mask
+$('#svgFile').onchange=e=>{ const file=e.target.files[0]; if(!file)return; const rd=new FileReader();
+  rd.onload=()=>{ const im=new Image(); im.onload=()=>{ MASK['user']=im; SHAPE_AR['user']=(im.naturalWidth/im.naturalHeight)||1;
+      if(![...$('#shapeSel').options].some(o=>o.value==='user')){ const opt=document.createElement('option'); opt.value='user'; opt.textContent='★ your SVG'; $('#shapeSel').appendChild(opt); }
+      $('#shapeSel').value='user'; params.shape='user'; maskDirty=true; updateShapeCtls(); buildSectionPickers(); };
+    im.onerror=()=>alert("Couldn't read that SVG — try a plain exported SVG ♡"); im.src=rd.result; };
+  rd.readAsDataURL(file); };
 
 // ---------- sliders ----------
 function bind(id,key){const el=$('#'+id), out=$('#v'+id.charAt(0).toUpperCase()+id.slice(1));
@@ -888,8 +917,7 @@ function randomLookObj(){                     // a coherent-but-genuinely-random
               chDelay: rchance(0.40)?Math.floor(rr(2,12)):0,
               trails:  rchance(0.40)?Math.floor(rr(20,72)):0,
               timewarp:rchance(0.30)?Math.floor(rr(30,88)):0 },
-    stack: { depth:d, scale:+rr(0.46,0.6).toFixed(2), zoom:(d&&rchance(0.6))?Math.floor(rr(2,7)):0 },
-    vig: { amount: rchance(0.5)?+rr(0.1,0.4).toFixed(2):0, split: rchance(0.4)?+rr(0.1,0.45).toFixed(2):0 }
+    stack: { depth:d, scale:+rr(0.46,0.6).toFixed(2), zoom:(d&&rchance(0.6))?Math.floor(rr(2,7)):0 }
   };
 }
 function applyLook(L){
@@ -899,7 +927,6 @@ function applyLook(L){
   if(L.fx)     Object.assign(params.fx, L.fx);
   if(L.glitch) Object.assign(params.glitch, L.glitch);
   if(L.stack)  Object.assign(params.stack, L.stack);
-  if(L.vig)    Object.assign(params.vig, L.vig);
   frameHist=[]; twHist=[];
   resyncUI();
 }
@@ -920,9 +947,7 @@ $('#sortMode').onchange=e=>{ params.glitch.sortMode=e.target.value; };
 $('#depth').addEventListener('input',e=>{ params.stack.depth=parseInt(e.target.value); $('#vDepth').textContent=e.target.value; });
 $('#sscale').addEventListener('input',e=>{ params.stack.scale=parseInt(e.target.value)/100; $('#vSscale').textContent=e.target.value; });
 $('#szoom').addEventListener('input',e=>{ params.stack.zoom=parseFloat(e.target.value); $('#vSzoom').textContent=e.target.value; });
-// vignette + channels wiring
-$('#vamt').addEventListener('input',e=>{ params.vig.amount=parseInt(e.target.value)/100; $('#vVamt').textContent=e.target.value; });
-$('#vsplit').addEventListener('input',e=>{ params.vig.split=parseInt(e.target.value)/100; $('#vVsplit').textContent=e.target.value; });
+// (vignette removed — channel-break replaces it, wired in shape controls below)
 const FXP={candy:{hue:300,sat:170,contrast:110,invert:0}, acid:{hue:80,sat:260,contrast:135,invert:0}, cool:{hue:200,sat:150,contrast:105,invert:0}, fxreset:{hue:0,sat:100,contrast:100,invert:0}};
 document.querySelectorAll('[data-fx]').forEach(btn=>btn.onclick=()=>{ params.fx={...FXP[btn.dataset.fx]}; applyFxToUI(); });
 
@@ -963,21 +988,19 @@ $('#newSeedBtn').onclick=()=>newSeed();
 // ---------- save / load a look ----------
 function collectLook(){ return {app:'mosh',v:1, noiseSeed, params:JSON.parse(JSON.stringify(params)), splitX, splitY, react:{bpm:react.bpm,strength:react.strength}, stops:JSON.parse(JSON.stringify(stops))}; }
 function resyncUI(){
-  if(params.shape==='text') params.shape='cross';   // typed-word masks removed
   [...$('#chips').children].forEach(x=>x.classList.toggle('on',x.dataset.p===params.preset));
   const w = params.where==='whole' ? 'whole' : 'split';
   [...$('#whereSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.w===w));
   $('#wholeBox').style.display=(w==='whole')?'block':'none';
   $('#shapeRow').style.display=(w==='split')?'block':'none';
   $('#splitTools').style.display=(w!=='whole')?'block':'none';
-  $('#shapeSel').value=params.shape;
+  $('#shapeSel').value=params.shape; const _ss=Math.round((params.radius||0.32)*100); $('#shapeSize').value=_ss; $('#vShapeSize').textContent=_ss; $('#shapeRot').value=params.shapeRot||0; $('#vShapeRot').textContent=params.shapeRot||0; const _sc=Math.round((params.shapeChan!=null?params.shapeChan:0.5)*100); $('#shapeChan').value=_sc; $('#vShapeChan').textContent=_sc; updateShapeCtls();
   setSlider('power','power',params.power); setSlider('block','block',params.block); setSlider('rec','rec',params.rec); setSlider('smear','smear',params.smear); setSlider('speed','speed',params.speed);
   applyFxToUI(); $('#ratio').value=params.ratio;
   if(params.glitch){ if(params.glitch.sortDir==null)params.glitch.sortDir='h'; if(params.glitch.sortMode==null)params.glitch.sortMode='bright'; if(params.glitch.timewarp==null)params.glitch.timewarp=0;
     ['sort','sortThresh','chDelay','trails','timewarp'].forEach(k=>{ const el=$('#'+k); if(el){el.value=params.glitch[k]; $('#v'+k.charAt(0).toUpperCase()+k.slice(1)).textContent=params.glitch[k];} });
     $('#sortDir').value=params.glitch.sortDir; $('#sortMode').value=params.glitch.sortMode; }
   if(params.stack){ $('#depth').value=params.stack.depth; $('#vDepth').textContent=params.stack.depth; const sp=Math.round(params.stack.scale*100); $('#sscale').value=sp; $('#vSscale').textContent=sp; $('#szoom').value=params.stack.zoom; $('#vSzoom').textContent=params.stack.zoom; }
-  if(params.vig){ const va=Math.round(params.vig.amount*100), vs=Math.round(params.vig.split*100); $('#vamt').value=va; $('#vVamt').textContent=va; $('#vsplit').value=vs; $('#vVsplit').textContent=vs; }
   $('#bpm').value=react.bpm; $('#vBpm').textContent=react.bpm; $('#react').value=react.strength; $('#vReact').textContent=react.strength;
   if(params.auto){ $('#autoMoveBtn').textContent='auto-move: '+(params.auto.on?'on':'off'); $('#autoMode').value=params.auto.mode; $('#autoSpeed').value=params.auto.speed; $('#vAutoSpeed').textContent=params.auto.speed; autoBase=performance.now(); }
   if(params.vary) syncVaryUI();
