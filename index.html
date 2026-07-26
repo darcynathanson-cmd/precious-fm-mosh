@@ -54,6 +54,9 @@
   @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.5}}
   hr{border:0;border-top:1px solid var(--line);margin:16px 0}
   .bigbtn{width:100%;border:0;border-radius:13px;padding:13px;font-weight:800;font-size:15px;cursor:pointer;background:var(--accent);color:#fff}
+  .viewseg{margin:0 0 12px}
+  .viewseg button{font-size:12px;padding:7px 4px}
+  body.simple .adv{display:none!important}
   #controls.locked{opacity:.38;pointer-events:none;filter:grayscale(.3)}
   .sub{margin-top:10px}
   .pick{display:flex;align-items:center;gap:8px;margin-bottom:7px}
@@ -82,13 +85,18 @@
 
   <div class="panel">
    <div id="panelScroll">
+    <button id="randAllBtn" class="bigbtn" style="background:linear-gradient(90deg,#ff5db1,#7c5cff,#22b0ff);margin-bottom:10px" title="Randomise the whole tool — a brand-new look every click">🎲 RANDOM — new look each click</button>
+    <div class="seg viewseg" id="viewSeg" title="Simple = just the essentials. Full = every control.">
+      <button data-view="simple" class="on">simple</button>
+      <button data-view="full">all controls</button>
+    </div>
     <!-- STEP 1 · MEDIA -->
     <div class="step">
       <span class="num">1 · Add media</span>
       <button id="addBtn" class="bigbtn" title="Load a photo, GIF or video">＋  photo · gif · video</button>
       <div class="hint" id="mediaName">Nothing loaded — drop a file on the left or click above.</div>
-      <button class="reveal" id="abToggle" title="Optional: mosh a second clip into the first for a transition">＋ mosh a 2nd clip (optional) ▸</button>
-      <div class="abbox" id="abBox" style="display:none">
+      <button class="reveal adv" id="abToggle" title="Optional: mosh a second clip into the first for a transition">＋ mosh a 2nd clip (optional) ▸</button>
+      <div class="abbox adv" id="abBox" style="display:none">
         <div class="lbl">Your loaded file is <b>clip&nbsp;A</b>. Load a second clip <b>B</b>, then mosh A into it for a transition.</div>
         <div class="row">
           <button class="mini" id="addBtn2" title="Load clip B — the clip A moshes into">＋ load clip B</button>
@@ -200,14 +208,14 @@
         <div class="ctl"><label title="How wild the glitch is">Intensity <b id="vPower">1.7</b></label><input type="range" id="power" min="0.3" max="3.5" step="0.1" value="1.7"></div>
         <div class="ctl"><label title="Chunky vs fine blocks">Block size <b id="vBlock">16</b></label><input type="range" id="block" min="6" max="48" step="2" value="16"></div>
         <div class="ctl"><label title="Higher = more of your original photo stays visible">Keep original <b id="vRec">7</b></label><input type="range" id="rec" min="0" max="30" step="1" value="7"></div>
-        <details>
+        <details class="adv">
           <summary>more</summary>
           <div class="ctl" style="margin-top:8px"><label>Smear <b id="vSmear">6</b></label><input type="range" id="smear" min="1" max="14" step="1" value="6"></div>
           <div class="ctl"><label>Speed <b id="vSpeed">1.0</b></label><input type="range" id="speed" min="0.2" max="2.5" step="0.1" value="1.0"></div>
           <label class="toggle"><input type="checkbox" id="crazy" checked> crazy from the first frame</label>
         </details>
         <div class="row"><button class="mini" id="randBtn" title="Roll a random look + intensity">🎲 randomize</button><button class="mini" id="undoBtn" title="Undo the last randomize / loaded look">↶ undo</button><button class="mini" id="resetBtn" title="Restart the glitch from the clean image">restart ↺</button></div>
-        <details>
+        <details class="adv">
           <summary>colour fx</summary>
           <div class="ctl" style="margin-top:8px"><label>Hue <b id="vHue">0</b></label><input type="range" id="hue" min="0" max="360" step="5" value="0"></div>
           <div class="ctl"><label>Saturation <b id="vSat">100</b></label><input type="range" id="sat" min="0" max="300" step="10" value="100"></div>
@@ -218,7 +226,7 @@
             <button class="mini" data-fx="cool">cool</button><button class="mini" data-fx="fxreset">reset</button>
           </div>
         </details>
-        <details>
+        <details class="adv">
           <summary>glitch fx (pro)</summary>
           <div class="ctl" style="margin-top:8px"><label title="Sort bright pixel runs by brightness">Pixel sort <b id="vSort">0</b></label><input type="range" id="sort" min="0" max="100" step="2" value="0"></div>
           <div class="ctl"><label title="Sort only pixels brighter than this">↳ sort threshold <b id="vSortThresh">120</b></label><input type="range" id="sortThresh" min="0" max="255" step="5" value="120"></div>
@@ -231,14 +239,14 @@
           <div class="ctl"><label title="Slit-scan: each row shows a different moment in time — a liquid time ripple">Time-warp (slit-scan) <b id="vTimewarp">0</b></label><input type="range" id="timewarp" min="0" max="100" step="2" value="0"></div>
           <div class="hint">Time-warp samples different rows from different moments — the image ripples through its own recent past. Great over <b>melt</b> or <b>chaos</b>.</div>
         </details>
-        <details>
+        <details class="adv">
           <summary>stack ↻ (inside itself)</summary>
           <div class="ctl" style="margin-top:8px"><label title="How many nested copies to recurse into the centre">Depth <b id="vDepth">0</b></label><input type="range" id="depth" min="0" max="6" step="1" value="0"></div>
           <div class="ctl"><label title="How much smaller each nested copy is">Shrink <b id="vSscale">50</b></label><input type="range" id="sscale" min="30" max="72" step="1" value="50"></div>
           <div class="ctl"><label title="0 = still · higher = the classic never-ending zoom into itself">Infinite zoom <b id="vSzoom">0</b></label><input type="range" id="szoom" min="0" max="10" step="1" value="0"></div>
           <div class="hint">Nests the image inside itself toward the centre — like a photo of a photo of a photo. Turn <b>infinite zoom</b> up and record for the endless-zoom loop.</div>
         </details>
-        <details>
+        <details class="adv">
           <summary>auto-move ✨ (record a journey)</summary>
           <div class="row" style="margin-top:8px">
             <button class="mini" id="autoMoveBtn">auto-move: off</button>
@@ -260,7 +268,7 @@
           </div>
           <div class="hint">Animates the sliders so a recording travels through a range of looks. For <b>custom stops</b>: dial a look, hit <b>add stop</b>, repeat — the video glides between your stops in order. Ties to the record length (one full pass).</div>
         </details>
-        <details>
+        <details class="adv">
           <summary>beat sync</summary>
           <div class="row" style="margin-top:8px"><button class="mini" id="audioBtn">🎵 add music</button><button class="mini" id="beatOnBtn">react: off</button></div>
           <div class="ctl" style="margin-top:8px"><label>BPM <b id="vBpm">128</b></label><input type="range" id="bpm" min="60" max="180" step="1" value="128"></div>
@@ -268,7 +276,7 @@
           <div class="ctl"><label>🔊 Volume <b id="vVol">off</b></label><input type="range" id="vol" min="0" max="1" step="0.01" value="0"></div>
           <div class="hint">Add a track (or use the video's own sound) + turn react on → the glitch pulses to the bass. Music is baked into the recording. No track? It pulses to the BPM.<br><b>Volume</b> starts <b>off</b> so nothing blares — slide it up if you want to hear the track while working. Either way the recording keeps the music at full level and the beat still reacts.</div>
         </details>
-        <details open>
+        <details class="adv">
           <summary>✨ variety — never the same twice</summary>
           <label class="toggle" style="margin-top:8px"><input type="checkbox" id="varyOn"> keep it moving (live modulation)</label>
           <div class="ctl" style="margin-top:8px"><label>Amount <b id="vVaryAmt">0.6</b></label><input type="range" id="varyAmt" min="0" max="1" step="0.05" value="0.6"></div>
@@ -370,7 +378,7 @@ const SHAPES=[
 ];
 // mask shapes: key -> loaded silhouette <img> (a 2-region inside/outside mask). Baked SVGs + user uploads.
 const MASK={}, SHAPE_AR={};
-let shpCells=[], shpKey='', shpTile=null, shpTctx=null;   // shapes-mode state
+let shpCells=[], shpKey='', shpTile=null, shpTctx=null, shpHueA=null, shpHueB=null, shpLastDraw=0;   // shapes-mode state
 SHAPES.forEach(sp=>{ SHAPE_AR[sp.k]=sp.ar; const im=new Image(); im.onload=()=>{ MASK[sp.k]=im; if(params.shape===sp.k){maskDirty=true;} }; im.src=sp.uri; });
 const SIZED=s=> s==='circle'||MASK[s];
 let maskCv=null, maskCtx=null, maskFlags=null, maskDirty=true;
@@ -784,6 +792,9 @@ function shpPalColor(lum,name){ const st=SHPPAL[name]||SHPPAL.candy, p=Math.max(
 const MIXSET=['circle','heart','star','flower','butterfly'];
 function shpBG(){ const S=params.shapes; if(S.bg==='transparent'){ pctx.clearRect(0,0,W,H); return; } if(S.bg==='candy'){ const g=pctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#bcdcff'); g.addColorStop(1,'#ffd6ec'); pctx.fillStyle=g; } else pctx.fillStyle=({white:'#ffffff',black:'#000000',cream:'#fff6e9',ink:'#1a1030'}[S.bg]||'#ffffff'); pctx.fillRect(0,0,W,H); }
 function shpRandom(){ const S=params.shapes, pk=a=>a[Math.floor(Math.random()*a.length)]; S.style=pk(['bloom','bloom','portal']); S.shape=pk(['circle','heart','star','flower','butterfly','mix','apple','bunny','hibiscus']); S.spacing=[10,14,18,24,34,50,70][Math.floor(Math.random()*7)]; S.motion=pk(['arc','arc','gentle','rain']); S.swim=Math.random()<0.7; S.dark=Math.random()<0.4; S.colorMode=pk(['photo','photo','palette']); S.palette=pk(['candy','rainbow','sunset','mint']); S.bg=pk(['candy','candy','white','cream','ink']); noiseSeed=Math.floor(Math.random()*1e6); shpKey=''; syncShapesUI(); }
+function randomAll(){ snapshot(); noiseSeed=Math.floor(Math.random()*1e6);
+  if(Math.random()<0.5){ setMode('mosh'); applyLook(randomLookObj()); if(Math.random()<0.55){ params.vary.on=true; try{syncVaryUI();}catch(_){} } }
+  else { setMode('shapes'); shpRandom(); } }
 function syncShapesUI(){ const S=params.shapes, $$=id=>document.getElementById(id); if(!$$('sShape'))return;
   const ms=$$('modeSeg'); if(ms)[...ms.children].forEach(x=>x.classList.toggle('on',x.dataset.mode===params.mode));
   [...document.querySelectorAll('#shapesPanel [data-sstyle]')].forEach(x=>x.classList.toggle('on',x.dataset.sstyle===S.style));
@@ -794,7 +805,7 @@ function shpBuild(){
   const S=params.shapes, k2=[S.style,S.shape,S.spacing,W,H].join('|');
   if(k2===shpKey && shpCells.length){ return; } shpKey=k2;
   if(!srcCanvas){ shpCells=[]; return; }
-  const sp=Math.max(6,S.spacing|0), d=srcCanvas.getContext('2d').getImageData(0,0,W,H).data, q=sp>>2; shpCells=[]; let idx=0;
+  const sp=Math.max(S.style==='portal'?14:6,S.spacing|0), d=srcCanvas.getContext('2d').getImageData(0,0,W,H).data, q=sp>>2; shpCells=[]; let idx=0;
   for(let gy=sp>>1; gy<H+sp; gy+=sp) for(let gx=sp>>1; gx<W+sp; gx+=sp){ idx++;
     let rs=0,gs=0,bs=0,n=0;
     for(let yy=Math.max(0,gy-q); yy<Math.min(H,gy+q); yy+=2) for(let xx=Math.max(0,gx-q); xx<Math.min(W,gx+q); xx+=2){ const i=(yy*W+xx)*4; rs+=d[i];gs+=d[i+1];bs+=d[i+2];n++; }
@@ -828,23 +839,24 @@ function shpPortal(ctx,c,shp,x,y,r,hm,seg,t){
   const fr=(t*22)%1, ang=a1*(1-fr)+a2*fr, dx=Math.cos(ang)*gmag, dy=Math.sin(ang)*gmag, split=4+14*hm;
   if(GEO.has(shp) || !MASK[shp]){
     ctx.save(); shpGeom(ctx,shp,x,y,r); ctx.clip();
-    ctx.drawImage(srcCanvas,dx,dy);
+    const hx=r*1.3, sz=r*2.6, ddx=x+dx-hx, ddy=y+dy-hx, px=x-hx, py=y-hx;
+    ctx.drawImage(srcCanvas, ddx,ddy,sz,sz, px,py,sz,sz);
     ctx.globalCompositeOperation='screen';ctx.globalAlpha=0.6;
-    ctx.filter='hue-rotate(320deg)';ctx.drawImage(srcCanvas,dx+split,dy);
-    ctx.filter='hue-rotate(180deg)';ctx.drawImage(srcCanvas,dx-split,dy);
-    ctx.filter='none';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    ctx.drawImage(shpHueA, ddx+split,ddy,sz,sz, px,py,sz,sz);
+    ctx.drawImage(shpHueB, ddx-split,ddy,sz,sz, px,py,sz,sz);
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
     ctx.restore();
   } else {
     const im=MASK[shp], ar=SHAPE_AR[shp]||1; let dh=r*2,dw=dh*ar;
-    if(!shpTile){shpTile=document.createElement('canvas');shpTctx=shpTile.getContext('2d');}
-    shpTile.width=Math.max(1,Math.ceil(dw));shpTile.height=Math.max(1,Math.ceil(dh)); const tc=shpTctx;
-    tc.clearRect(0,0,dw,dh); tc.globalCompositeOperation='source-over';tc.globalAlpha=1;tc.filter='none';
-    const ox=dw/2-(x+dx), oy=dh/2-(y+dy);
-    tc.drawImage(srcCanvas,ox,oy);
+    if(!shpTile){shpTile=document.createElement('canvas');shpTile.width=380;shpTile.height=380;shpTctx=shpTile.getContext('2d');}
+    if(dw>shpTile.width||dh>shpTile.height){const k=Math.min(shpTile.width/dw,shpTile.height/dh);dw*=k;dh*=k;}
+    const tc=shpTctx; tc.clearRect(0,0,dw,dh); tc.globalCompositeOperation='source-over';tc.globalAlpha=1;
+    const sx=x+dx-dw/2, sy=y+dy-dh/2;
+    tc.drawImage(srcCanvas, sx,sy,dw,dh, 0,0,dw,dh);
     tc.globalCompositeOperation='screen';tc.globalAlpha=0.6;
-    tc.filter='hue-rotate(320deg)';tc.drawImage(srcCanvas,ox+split,oy);
-    tc.filter='hue-rotate(180deg)';tc.drawImage(srcCanvas,ox-split,oy);
-    tc.filter='none';tc.globalAlpha=1;
+    tc.drawImage(shpHueA, sx+split,sy,dw,dh, 0,0,dw,dh);
+    tc.drawImage(shpHueB, sx-split,sy,dw,dh, 0,0,dw,dh);
+    tc.globalAlpha=1;
     tc.globalCompositeOperation='destination-in';tc.drawImage(im,0,0,dw,dh);
     tc.globalCompositeOperation='source-over';
     ctx.drawImage(shpTile,0,0,dw,dh,x-dw/2,y-dh/2,dw,dh);
@@ -854,6 +866,13 @@ function renderShapes(t){
   const S=params.shapes;
   shpBG();
   const hm=shpHump(t), seg=Math.floor(t*22), now=nowMs()/1000;
+  if(S.style==='portal'){
+    if(!shpHueA){shpHueA=document.createElement('canvas');shpHueB=document.createElement('canvas');}
+    if(shpHueA.width!==W||shpHueA.height!==H){shpHueA.width=W;shpHueA.height=H;shpHueB.width=W;shpHueB.height=H;}
+    const ca=shpHueA.getContext('2d'), cb=shpHueB.getContext('2d');
+    ca.clearRect(0,0,W,H); ca.filter='hue-rotate(320deg)'; ca.drawImage(srcCanvas,0,0); ca.filter='none';
+    cb.clearRect(0,0,W,H); cb.filter='hue-rotate(180deg)'; cb.drawImage(srcCanvas,0,0); cb.filter='none';
+  }
   pctx.imageSmoothingEnabled=true;
   for(const c of shpCells){
     let bloom=sstep((t-c.delay*0.30)/0.24), x=c.x, y=c.y, sc=bloom;
@@ -871,7 +890,7 @@ function renderShapes(t){
 function shpLoopT(){ return params.shapes.motion==='arc' ? (nowMs()/9000)%1 : 1; }
 function loop(){
   if(exporting){ raf=requestAnimationFrame(loop); return; }
-  if(params.mode!=='mosh'){ if(srcCanvas){ if(srcAnimated||srcAnimatedB||srcMediaB){updateSrc(); shpKey='';} shpBuild(); renderShapes(shpLoopT()); } raf=requestAnimationFrame(loop); return; }
+  if(params.mode!=='mosh'){ if(srcCanvas){ if(srcAnimated||srcAnimatedB||srcMediaB){updateSrc(); shpKey='';} shpBuild(); const _n=performance.now(); if(_n-shpLastDraw>32){ renderShapes(shpLoopT()); shpLastDraw=_n; } } raf=requestAnimationFrame(loop); return; }
   beatMul=computeBeat();                       // glitch intensity pulses with the beat
   applyVariety();                              // live modulation (drift/pulse/wind/bursts) — no two runs alike
   if(params.auto.on){ if(!autoBase)autoBase=performance.now();
@@ -1173,7 +1192,7 @@ function resyncUI(){
 $('#festBtn').onclick=function(){
   if(!srcCanvas){ alert('Load something first ♡'); return; }
   const EW=1080, EH=1920, FPS=25, TOTAL=250;
-  const ec=document.createElement('canvas'); ec.width=EW; ec.height=EH; const ex=ec.getContext('2d'); ex.imageSmoothingEnabled=false;
+  const ec=document.createElement('canvas'); ec.width=EW; ec.height=EH; const ex=ec.getContext('2d'); ex.imageSmoothingEnabled=(params.mode!=='mosh'); ex.imageSmoothingQuality='high';
   let mime='video/mp4;codecs=avc1.42E01E'; if(!MediaRecorder.isTypeSupported(mime))mime='video/webm;codecs=vp9'; if(!MediaRecorder.isTypeSupported(mime))mime='video/webm';
   let rec; try{ rec=new MediaRecorder(ec.captureStream(FPS),{mimeType:mime,videoBitsPerSecond:24_000_000}); }
   catch(err){ alert('Recording not available in this browser — open in Chrome ♡'); return; }
@@ -1198,6 +1217,10 @@ function setMode(m){ params.mode=m; shpKey='';
   $('#moshStyle').style.display=(m==='mosh')?'block':'none';
   $('#shapesPanel').style.display=(m==='shapes')?'block':'none'; }
 $('#modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.mode);});
+document.body.classList.add('simple');
+$('#viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.body.classList.toggle('simple',b.dataset.view==='simple');
+  [...$('#viewSeg').children].forEach(x=>x.classList.toggle('on',x===b));});
 $('#shapesPanel').addEventListener('click',e=>{const b=e.target.closest('[data-sstyle]');if(b){params.shapes.style=b.dataset.sstyle;[...b.parentNode.children].forEach(x=>x.classList.toggle('on',x===b));shpKey='';}});
 $('#sShape').onchange=e=>{ if(e.target.value==='__upload'){ window.__svgForShapes=true; $('#svgFile').click(); e.target.value=params.shapes.shape; return; } params.shapes.shape=e.target.value; shpKey=''; };
 $('#sSize').addEventListener('input',e=>{ params.shapes.spacing=parseInt(e.target.value); $('#vSsize').textContent=e.target.value; shpKey=''; });
@@ -1208,6 +1231,7 @@ $('#sColorMode').onchange=e=>params.shapes.colorMode=e.target.value;
 $('#sPalette').onchange=e=>params.shapes.palette=e.target.value;
 $('#sBg').onchange=e=>params.shapes.bg=e.target.value;
 $('#sRand').onclick=()=>shpRandom();
+$('#randAllBtn').onclick=()=>randomAll();
 $('#saveLookBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(collectLook())],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mosh-look.json'; a.click(); };
 $('#loadLookBtn').onclick=()=>$('#lookFile').click();
 $('#lookFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
